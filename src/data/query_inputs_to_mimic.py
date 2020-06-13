@@ -3,7 +3,9 @@ from textwrap import dedent
 
 
 # %%
-def build_query_lab_events(blood_lab_labels_list: list = None, urine_lab_labels_list: list = None) -> str:
+def build_query_lab_events(
+    blood_lab_labels_list: list = None, urine_lab_labels_list: list = None
+) -> str:
     blood_lab_labels = (
         blood_lab_labels_list
         if blood_lab_labels_list
@@ -38,34 +40,35 @@ def build_query_lab_events(blood_lab_labels_list: list = None, urine_lab_labels_
         urine_lab_labels_list
         if urine_lab_labels_list
         else [
-            "yeast", 
-            "urine appearance", 
-            "urine creatinine", 
-            "ketone", 
-            "urine volume", 
-            "osmolality, urine", 
-            "bacteria", 
-            "protein/creatinine ratio", 
+            "yeast",
+            "urine appearance",
+            "urine creatinine",
+            "ketone",
+            "urine volume",
+            "osmolality, urine",
+            "bacteria",
+            "protein/creatinine ratio",
             "nitrite",
-            "rbc", 
-            "cellular cast", 
+            "rbc",
+            "cellular cast",
             "wbc casts",
             "leukocytes",
-            "albumin, urine", 
-            "specific gravity", 
-            "rbc casts", 
-            "ph", 
-            "protein", 
-            "hyaline casts", 
-            "albumin/creatinine, urine", 
-            "broad casts", 
-            "urine casts, other", 
+            "albumin, urine",
+            "specific gravity",
+            "rbc casts",
+            "ph",
+            "protein",
+            "hyaline casts",
+            "albumin/creatinine, urine",
+            "broad casts",
+            "urine casts, other",
             "wbc",
-            "blood", 
-            "granular casts", 
-            "urine volume, total", 
-            "urine color", 
-            "sodium, urine"]
+            "blood",
+            "granular casts",
+            "urine volume, total",
+            "urine color",
+            "sodium, urine",
+        ]
     )
 
     blood_lab_labels_str = [
@@ -79,13 +82,12 @@ def build_query_lab_events(blood_lab_labels_list: list = None, urine_lab_labels_
     ]
     urine_lab_labels_where = " OR\n".join(urine_lab_labels_str)
 
-
     sql = f"""
-    SELECT  
+    SELECT
         le.subject_id,
         le.itemid AS labevents_itemid,
         le.charttime,
-        labitems.label, 
+        labitems.label,
         labitems.fluid,
         labitems.category,
         labitems.loinc_code,
@@ -103,7 +105,7 @@ def build_query_lab_events(blood_lab_labels_list: list = None, urine_lab_labels_
         FROM
             mimiciii.d_labitems AS li
         WHERE
-            {blood_lab_labels_where} OR 
+            {blood_lab_labels_where} OR
             {urine_lab_labels_where}
         EXCEPT
         SELECT
@@ -140,19 +142,17 @@ def build_query_lab_events(blood_lab_labels_list: list = None, urine_lab_labels_
 
 
 def build_query_kidney_events() -> str:
-        sql = f"""
+    sql = """
         SELECT
-            diagnosis.subject_id,
-            diagnosis.hadm_id AS diagnosis_hadm_id,
-            diagnosis.seq_num,
-            diagnosis.icd9_code,
-            diag.short_title,
-            diag.long_title
+            icd.row_id,
+            icd.icd9_code,
+            icd.short_title,
+            icd.long_title
         FROM
-            mimiciii.diagnoses_icd AS diagnosis
-        LEFT JOIN
-            mimiciii.d_icd_diagnoses AS diag
-            ON diag.icd9_code = diagnosis.icd9_code
+            mimiciii.d_icd_diagnoses as icd
+        WHERE
+            (lower(icd.short_title) LIKE '%kidney%') OR
+            (lower(icd.short_title) LIKE 'renal%')
         """
     return dedent(sql)
 

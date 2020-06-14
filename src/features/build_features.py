@@ -1,4 +1,6 @@
+#%%
 import pandas as pd
+import numpy as np
 from pathlib import Path
 from concurrent.futures import as_completed, ProcessPoolExecutor
 from tqdm.autonotebook import tqdm
@@ -89,35 +91,127 @@ def featurize_Y(Y_data_raw: pd.DataFrame):
     return Y
 
 
-def featurize(csv_file):
+def featurize(csv_file, labs_to_include: list):
     """Generate final `X` & `Y` dataframes used for modeling.
     Splits raw lab data into samples based on sliding window in `create_samples`.
     Featurize `X`, then Featurize `Y.  Returns `X` & `Y`.
     """
     pt_data = pd.read_csv(csv_file, header=[0, 1], index_col=0).labevents_value
+    # Only consider patients who have all columns in `labs_to_include`
+    cols_to_add = [
+        item
+        for item in [str(item) for item in labs_to_include]
+        if item not in pt_data.columns
+    ]
+    # Add columns
+    for col in cols_to_add:
+        pt_data[col] = np.nan
 
-    # Only create training example if patient has Creatinine Value
+    # Only create training example if patient has Creatinine Value (corresponding to itemid: 50912)
     if "Creatinine" in pt_data.columns:
         # Try to Preprocess Data
         try:
-            X_train_raw, Y_train_raw = create_samples(pt_data)
-            x = featurize_X(X_train_raw)
-            y = featurize_Y(Y_train_raw)
-            return (x, y)
+            X_raw, Y_raw = create_samples()(pt_data)
+            x = featurize_X(X_raw)
+            y = featurize_Y(Y_raw)
+            if x.empty or y.empty:
+                return None
+            else:
+                return {"x": x, "y": y}
         # If Error occurs, skip patient
         except Exception as e:
             print(f"Error occurred in file: {csv_file}.  Error: {e}")
+            return None
 
 
+#%%
 # Use Concurrent to featurize samples
+labs_to_include = [
+    "Urine Creatinine",
+    "Ketone",
+    "Estimated Actual Glucose",
+    "MCV",
+    "Osmolality, Urine",
+    "Bacteria",
+    "Bilirubin, Direct",
+    "Alkaline Phosphatase",
+    "Large Platelets",
+    "Nitrite",
+    "Platelet Smear",
+    "Bicarbonate",
+    "Sedimentation Rate",
+    "Absolute A1c",
+    "WBC Casts",
+    "Albumin, Urine",
+    "RBC Casts",
+    "White Blood Cells",
+    "Sodium",
+    "Hemoglobin",
+    "Bilirubin, Indirect",
+    "Albumin/Creatinine, Urine",
+    "Bilirubin, Total",
+    "Hypersegmented Neutrophils",
+    "Troponin I",
+    "Urine Casts, Other",
+    "pH",
+    "Glucose",
+    "Blood",
+    "Asparate Aminotransferase (AST)",
+    "Granular Casts",
+    "Platelet Count",
+    "Calculated Bicarbonate, Whole Blood",
+    "Platelet Clumps",
+    "Sodium, Urine",
+    "Yeast",
+    "Urine Appearance",
+    "Chloride, Whole Blood",
+    "Urine Volume",
+    "Chloride",
+    "C-Reactive Protein",
+    "Creatinine",
+    "Protein/Creatinine Ratio",
+    "Phosphate",
+    "Hematocrit, Calculated",
+    "WBCP",
+    "RBC",
+    "Cellular Cast",
+    "Leukocytes",
+    "Red Blood Cells",
+    "Specific Gravity",
+    "Glucose",
+    "pH",
+    "Neutrophils",
+    "Hematocrit",
+    "Protein",
+    "Hyaline Casts",
+    "% Hemoglobin A1c",
+    "Broad Casts",
+    "Troponin T",
+    "Potassium, Whole Blood",
+    "Hemoglobin",
+    "Potassium",
+    "WBC",
+    "WBC Count",
+    "NTproBNP",
+    "Alanine Aminotransferase (ALT)",
+    "Urine Volume, Total",
+    "Urine Color",
+    "Anti-Neutrophil Cytoplasmic Antibody",
+    "Sodium, Whole Blood",
+]
 executor = ProcessPoolExecutor()
-jobs = [executor.submit(featurize, csv_file) for csv_file in tqdm(csv_files)]
+jobs = [
+    executor.submit(featurize, csv_file, labs_to_include)
+    for csv_file in tqdm(csv_files)
+]
 
 X, Y = [], []
 for job in tqdm(as_completed(jobs), total=len(jobs)):
     x, y = job.result()
     X.append(x)
     Y.append(y)
+    # X += [x]
+    # Y += [y]
 
 # Join all featurized samples
 X = pd.concat(X, axis=0)
@@ -127,3 +221,6 @@ Y = pd.concat(Y, axis=0)
 processed_dir = Path("/home/victoria/aki-forecaster/data/processed")
 X.to_csv(processed_dir / "X.csv")
 Y.to_csv(processed_dir / "Y.csv")
+
+
+# %%

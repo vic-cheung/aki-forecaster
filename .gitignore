@@ -1,6 +1,6 @@
 # Ignore Data Files
-*.csv
 .vscode/*
+aki-forecaster.code-workspace
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

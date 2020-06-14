@@ -11,21 +11,20 @@ from src.data.query_inputs_to_mimic import (
 
 print("Starting Script...")
 
-# %% Query data
-query_labs = build_query_lab_events()
-# %%
 
-data_dir = Path("/home/victoria/aki-forecaster/data/raw")
-filename = data_dir / "labevents_of_patients.csv"
-
-# %% Actually Run Query & Get Data
-print("Starting query...")
-df = run_query(query_labs)
-df.to_csv(Path(filename))
-print(f"Saved file: {filename}")
-print("Data Preview: ")
-print(df.shape)
-print(df.head(10))
+def run_query_and_save(sql: str, filename: str):
+    data_dir = Path("/home/victoria/aki-forecaster/data/raw")
+    filename = data_dir / filename
+    print("Starting query...")
+    df = run_query(sql)
+    df.to_csv(Path(filename))
+    print(f"Saved file: {filename}")
 
 
-# %%
+# Query Data
+run_query_and_save(sql=build_query_lab_events(), filename="lab_events.csv")
+run_query_and_save(sql=build_query_kidney_events(), filename="kidney_events.csv")
+run_query_and_save(sql=build_query_adm(), filename="admissions.csv")
+run_query_and_save(sql=build_query_htwt(), filename="height_weight.csv")
+
+print("All queries are finished!")

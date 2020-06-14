@@ -139,12 +139,13 @@ def build_query_lab_events(
 def build_query_kidney_events() -> str:
     sql = """
         SELECT
-            icd.row_id,
-            icd.icd9_code,
-            icd.short_title,
-            icd.long_title
+            diag.subject_id,
+            diag.hadm_id,
+            diag.icd9_code
         FROM
-            mimiciii.d_icd_diagnoses as icd
+            mimiciii.diagnoses_icd as diag
+        INNER JOIN mimiciii.d_icd_diagnoses as icd
+            ON icd.icd9_code = diag.icd9_code
         WHERE
             (lower(icd.short_title) LIKE '%kidney%') OR
             (lower(icd.short_title) LIKE 'renal%')

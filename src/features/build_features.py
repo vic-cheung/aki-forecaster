@@ -11,8 +11,47 @@ pd.set_option("display.max_rows", None)
 
 #%%
 # Paths to Each Patient's Lab Data
-subj_id_labs = Path("/home/victoria/aki-forecaster/data/interim/subj_id_labs")
+subj_id_labs = Path("/home/victoria/aki-forecaster/data/interim/subj_id_labs_itemid")
 csv_files = [file for file in subj_id_labs.iterdir()]
+
+
+# %%
+def simplify_label(label: str) -> str:
+    "Simplifies `label` with comma in it by dropping after comma."
+    split_label = label.split(", ")
+    if len(split_label) == 1:
+        return label
+    elif split_label[1] in ("Whole Blood", "Blood", "Urine", "Calculated"):
+        return split_label[0]
+    else:
+        return label
+
+
+def uniquify_label(row: pd.Series):
+    "Uniquifies `label` by appending abbreviated `fluid` and `category`"
+
+    label = simplify_label(row.label)
+
+    if row.fluid.lower() == "blood":
+        fluid_str = "B"
+    elif row.fluid.lower() == "urine":
+        fluid_str = "U"
+    else:
+        fluid_str = "X"
+    if row.category.lower() == "hematology":
+        cat_str = "H"
+    elif row.category.lower() == "chemistry":
+        cat_str = "C"
+    elif row.category.lower() == "blood gas":
+        cat_str = "G"
+    else:
+        cat_str = "X"
+
+    new_label = label + f"[{fluid_str}-{cat_str}]"
+    return new_label
+
+
+# %%
 
 
 def create_samples(data: pd.DataFrame, window: int = 3):
@@ -63,7 +102,7 @@ def create_samples(data: pd.DataFrame, window: int = 3):
         # Only add x & y if both are not empty dataframes
         # and if there is a `y` label
         if (not x.empty) and (not y.empty):
-            if not y.Creatinine.empty:
+            if not y["50912"].empty:
                 # Add X to Dataset
                 X_data_raw += [x]
                 # Add Y to Dataset
@@ -86,7 +125,7 @@ def featurize_X(X_data_raw: pd.DataFrame):
 
 def featurize_Y(Y_data_raw: pd.DataFrame):
     "Returns pd.Series of Creatinine for day after X"
-    Y_cr_only = [Y.Creatinine for Y in Y_data_raw]
+    Y_cr_only = [Y["50912"] for Y in Y_data_raw]
     Y = pd.Series([item.mean() for item in Y_cr_only], name="Creatinine_avg")
     return Y
 
@@ -108,10 +147,10 @@ def featurize(csv_file, labs_to_include: list):
         pt_data[col] = np.nan
 
     # Only create training example if patient has Creatinine Value (corresponding to itemid: 50912)
-    if "Creatinine" in pt_data.columns:
+    if "50912" in pt_data.columns:
         # Try to Preprocess Data
         try:
-            X_raw, Y_raw = create_samples()(pt_data)
+            X_raw, Y_raw = create_samples(pt_data)
             x = featurize_X(X_raw)
             y = featurize_Y(Y_raw)
             if x.empty or y.empty:
@@ -125,97 +164,62 @@ def featurize(csv_file, labs_to_include: list):
 
 
 #%%
+# Make all labels unique by simplfying & then adding fluid & category info
+data_dir = Path("/home/victoria/aki-forecaster/data/raw")
+lab_ids = pd.read_csv(data_dir / "lab_items_id.csv")
+renamed_labels = lab_ids.apply(uniquify_label, axis=1)
+lab_ids["renamed_label"] = renamed_labels
+labs_to_include = lab_ids.itemid.to_list()
+# labs_to_exclude = lab_ids[
+#     lab_ids["label"].isin(
+#         [
+#             "Platelet Smear",
+#             "Sodium, Whole Blood",
+#             "Potassium, Whole Blood",
+#             "Chloride, Whole Blood",
+#             "Hematocrit, Calculated",
+#             "WBCP",
+#             "Calculated Bicarbonate, Whole Blood",
+#             "Anti-Neutrophil Cytoplasmic Antibody",
+#         ]
+#     )
+# ].itemid
+new_col_names = dict(
+    zip(
+        [str(item) + "_avg" for item in lab_ids.itemid], lab_ids.renamed_label + "_avg",
+    )
+)
+# %%
 # Use Concurrent to featurize samples
-labs_to_include = [
-    "Urine Creatinine",
-    "Ketone",
-    "Estimated Actual Glucose",
-    "MCV",
-    "Osmolality, Urine",
-    "Bacteria",
-    "Bilirubin, Direct",
-    "Alkaline Phosphatase",
-    "Large Platelets",
-    "Nitrite",
-    "Platelet Smear",
-    "Bicarbonate",
-    "Sedimentation Rate",
-    "Absolute A1c",
-    "WBC Casts",
-    "Albumin, Urine",
-    "RBC Casts",
-    "White Blood Cells",
-    "Sodium",
-    "Hemoglobin",
-    "Bilirubin, Indirect",
-    "Albumin/Creatinine, Urine",
-    "Bilirubin, Total",
-    "Hypersegmented Neutrophils",
-    "Troponin I",
-    "Urine Casts, Other",
-    "pH",
-    "Glucose",
-    "Blood",
-    "Asparate Aminotransferase (AST)",
-    "Granular Casts",
-    "Platelet Count",
-    "Calculated Bicarbonate, Whole Blood",
-    "Platelet Clumps",
-    "Sodium, Urine",
-    "Yeast",
-    "Urine Appearance",
-    "Chloride, Whole Blood",
-    "Urine Volume",
-    "Chloride",
-    "C-Reactive Protein",
-    "Creatinine",
-    "Protein/Creatinine Ratio",
-    "Phosphate",
-    "Hematocrit, Calculated",
-    "WBCP",
-    "RBC",
-    "Cellular Cast",
-    "Leukocytes",
-    "Red Blood Cells",
-    "Specific Gravity",
-    "Glucose",
-    "pH",
-    "Neutrophils",
-    "Hematocrit",
-    "Protein",
-    "Hyaline Casts",
-    "% Hemoglobin A1c",
-    "Broad Casts",
-    "Troponin T",
-    "Potassium, Whole Blood",
-    "Hemoglobin",
-    "Potassium",
-    "WBC",
-    "WBC Count",
-    "NTproBNP",
-    "Alanine Aminotransferase (ALT)",
-    "Urine Volume, Total",
-    "Urine Color",
-    "Anti-Neutrophil Cytoplasmic Antibody",
-    "Sodium, Whole Blood",
-]
 executor = ProcessPoolExecutor()
 jobs = [
     executor.submit(featurize, csv_file, labs_to_include)
     for csv_file in tqdm(csv_files)
 ]
 
-X, Y = [], []
-for job in tqdm(as_completed(jobs), total=len(jobs)):
-    x, y = job.result()
-    X.append(x)
-    Y.append(y)
-    # X += [x]
-    # Y += [y]
+# X, Y = [], []
+# for job in tqdm(as_completed(jobs), total=len(jobs)):
+#     x, y = job.result()
+#     X.append(x)
+#     Y.append(y)
+#     # X += [x]
+#     # Y += [y]
 
-# Join all featurized samples
-X = pd.concat(X, axis=0)
-Y = pd.concat(Y, axis=0)
+
+results = []
+for job in tqdm(as_completed(jobs), total=len(jobs)):
+    results.append(job.result())
+
+# Remove `None` Results
+results = [x for x in results if pd.notnull(x)]
+
+# Concatenate x's & y's derived from each patient into single `X` and `Y` matrix
+X = pd.concat([item["x"] for item in results], axis=0).rename(columns=new_col_names)
+Y = pd.concat([item["y"] for item in results], axis=0)
+
+# # Join all featurized samples
+# X = pd.concat(X, axis=0)
+# Y = pd.concat(Y, axis=0)
 
 # Save Train Data
 processed_dir = Path("/home/victoria/aki-forecaster/data/processed")

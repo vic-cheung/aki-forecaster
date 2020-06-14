@@ -11,17 +11,19 @@ pd.set_option("display.max_rows", None)
 # Save Lab Files by Subject ID
 # %% Load Labs Table
 print("Loading labs table...")
-lab_table = pd.read_csv(Path.cwd() / "labevents_of_patients.csv")
+data_dir = Path("/home/victoria/aki-forecaster/data/raw")
+lab_table = pd.read_csv(data_dir / "lab_events.csv")
 print("Loaded")
 
 
+# %%
 def pivot_labs_and_save(subj_id, subj_id_grp) -> pd.DataFrame:
     data_dir = Path("/home/victoria/aki-forecaster/data/interim")
     pivoted = pd.pivot_table(
         subj_id_grp,
-        values=["labevents_value", "labevents_flag"],
-        index="labevents_charttime",
-        columns="labitems_label",
+        values=["labevents_value", "flag"],
+        index="charttime",
+        columns="label",
         aggfunc=list,
     ).applymap(lambda x: x[0] if isinstance(x, list) else x)
     save_filename = data_dir / "subj_id_labs" / f"{subj_id}.csv"
@@ -29,6 +31,7 @@ def pivot_labs_and_save(subj_id, subj_id_grp) -> pd.DataFrame:
     # print(f"Saved file: {save_filename}")
 
 
+# %%
 # Use Concurrent To Save Files in Paralle
 executor = ProcessPoolExecutor()
 jobs = [

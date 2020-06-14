@@ -17,8 +17,8 @@ pd.set_option("display.max_rows", None)
 # %% Load Height, Weight, Date of Birth Table
 raw_data_dir = Path("/home/victoria/aki-forecaster/data/raw")
 print("Loading height-weight-dob table...")
-hwd = pd.read_csv(raw_data_dir / "height_weight.csv").rename(
-    columns={"value": "height", "valueuom": "height_units", "patientweight": "weight"}
+htwt = pd.read_csv(raw_data_dir / "height_weight.csv").rename(
+    columns={"patientweight": "weight"}
 )
 print("Loading admissions table...")
 admissions = (
@@ -66,24 +66,24 @@ def get_last_non_nan_value(series: pd.Series):
     return value
 
 
-def process_demographics(subj_id, grp_df):
-    df = grp_df.sort_values(by="chart_charttime")
+def process_htwt(subj_id, grp_df):
+    df = grp_df.sort_values(by="charttime")
     return df.apply(get_last_non_nan_value, axis=0).to_dict()
 
 
 # Get only columns we need
-hwd = hwd.loc[:, ["subject_id", "chart_charttime", "gender", "dob", "height", "weight"]]
+htwt = htwt.loc[:, ["subject_id", "charttime", "weight", "height", "height_units"]]
 # Converts height based on units
-hwd.height = hwd.apply(normalize_value, axis=1)
+htwt.height = htwt.apply(normalize_value, axis=1)
 # Gets rid of invalid height values
-hwd.height = hwd.height.apply(remove_invalid_height)
+htwt.height = htwt.height.apply(remove_invalid_height)
 
 
 # Use Concurrent pkg to parallelize featurization
 executor = ProcessPoolExecutor()
 jobs = [
-    executor.submit(process_demographics, subj_id, grp_df)
-    for subj_id, grp_df in hwd.groupby("subject_id")
+    executor.submit(process_htwt, subj_id, grp_df)
+    for subj_id, grp_df in htwt.groupby("subject_id")
 ]
 
 results = []
@@ -91,20 +91,20 @@ for job in tqdm(as_completed(jobs), total=len(jobs)):
     results.append(job.result())
 
 
-demographics = pd.DataFrame(results)
+height_weight = pd.DataFrame(results)
 
 # Uncomment to save
-# demographics.to_csv(
-#     Path(
-#         "/home/victoria/predicting-insulin-regimen/patients_demographics_processed.csv"
-#     )
-# )
+height_weight.to_csv(
+    Path(
+        "/home/victoria/aki-forecaster/data/interim/patients_height_weight_processed.csv"
+    )
+)
 #%% [markdown]
 # Now we have cleaned demographics, which we will join with hospital admissions table
 #%%
 
 demographics = pd.read_csv(
-    Path.cwd() / "patients_demographics_processed.csv", header=0, index_col=0
+    Path.cwd() / "patients_height_weight_processed.csv", header=0, index_col=0
 )
 
 
@@ -150,6 +150,6 @@ pt_info["age"] = pt_info.apply(
 ).apply(lambda age: 89 if (age == 300) else age)
 
 #%% Save Merged & Processed Demographics & Hospital Admission Dataferame
-save_filename = Path.cwd() / "patients_hwd_adm.csv"
+save_filename = Path.cwd() / "patients_htwt_adm.csv"
 pt_info.to_csv(save_filename)
 print(f"Saved file: {save_filename}")

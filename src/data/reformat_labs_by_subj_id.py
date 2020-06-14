@@ -13,6 +13,8 @@ pd.set_option("display.max_rows", None)
 print("Loading labs table...")
 data_dir = Path("/home/victoria/aki-forecaster/data/raw")
 lab_table = pd.read_csv(data_dir / "lab_events.csv")
+lab_ids = pd.read_csv(data_dir / "lab_items_id.csv")
+
 print("Loaded")
 
 
@@ -52,6 +54,21 @@ def uniquify_label(row: pd.Series):
     return new_label
 
 
+def pivot_labs_and_save(subj_id, subj_id_grp) -> pd.DataFrame:
+    data_dir = Path("/home/victoria/aki-forecaster/data/interim")
+    pivoted = pd.pivot_table(
+        subj_id_grp,
+        values=["labevents_value", "flag"],
+        index="charttime",
+        columns="label",
+        aggfunc=list,
+    ).applymap(lambda x: x[0] if isinstance(x, list) else x)
+    save_filename = data_dir / "subj_id_labs" / f"{subj_id}.csv"
+    pivoted.to_csv(save_filename)
+    # print(f"Saved file: {save_filename}")
+
+
+# %%
 # Make all labels unique by simplfying & then adding fluid & category info
 renamed_labels = lab_ids.apply(uniquify_label, axis=1)
 lab_ids["renamed_label"] = renamed_labels
@@ -70,21 +87,6 @@ labs_to_exclude = lab_ids[
         ]
     )
 ].itemid
-
-
-def pivot_labs_and_save(subj_id, subj_id_grp) -> pd.DataFrame:
-    data_dir = Path("/home/victoria/aki-forecaster/data/interim")
-    pivoted = pd.pivot_table(
-        subj_id_grp,
-        values=["labevents_value", "flag"],
-        index="charttime",
-        columns="label",
-        aggfunc=list,
-    ).applymap(lambda x: x[0] if isinstance(x, list) else x)
-    save_filename = data_dir / "subj_id_labs" / f"{subj_id}.csv"
-    pivoted.to_csv(save_filename)
-    # print(f"Saved file: {save_filename}")
-
 
 # %%
 # Use Concurrent To Save Files in Paralle

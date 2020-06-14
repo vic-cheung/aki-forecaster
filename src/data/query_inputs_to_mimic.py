@@ -222,7 +222,6 @@ def build_query_weight() -> str:
         ie.subject_id,
         ie.starttime,
         ie.endtime,
-        ie.itemid,
         ie.patientweight
     FROM
         mimiciii.inputevents_mv as ie

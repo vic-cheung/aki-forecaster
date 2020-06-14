@@ -1,8 +1,6 @@
-#%%
 from textwrap import dedent
 
 
-# %%
 def build_query_lab_events(
     blood_lab_labels_list: list = None, urine_lab_labels_list: list = None
 ) -> str:
@@ -138,9 +136,6 @@ def build_query_lab_events(
     return dedent(sql)
 
 
-#%%
-
-
 def build_query_kidney_events() -> str:
     sql = """
         SELECT
@@ -157,7 +152,6 @@ def build_query_kidney_events() -> str:
     return dedent(sql)
 
 
-# %%
 def build_query_adm() -> str:
     sql = """
         SELECT
@@ -182,7 +176,7 @@ def build_query_adm() -> str:
 
 
 def build_query_htwt() -> str:
-    sql = """    
+    sql = """
         WITH chart_inputs AS
             (SELECT
                 chart.subject_id,

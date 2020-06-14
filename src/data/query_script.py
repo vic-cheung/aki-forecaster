@@ -2,16 +2,21 @@
 # %% import libraries
 from pathlib import Path
 from connect_and_run_pgsql import run_query
-from query_inputs_to_mimic import build_query_lab_events
+from src.data.query_inputs_to_mimic import (
+    build_query_lab_events,
+    build_query_kidney_events,
+    build_query_adm,
+    build_query_htwt,
+)
 
 print("Starting Script...")
 
 # %% Query data
 query_labs = build_query_lab_events()
 # %%
-parent_dir = "/home/victoria/aki-forecaster/"
-item = "labevents_of_patients"
-filename = parent_dir + item + ".csv"
+
+data_dir = Path("/home/victoria/aki-forecaster/data/raw")
+filename = data_dir / "labevents_of_patients.csv"
 
 # %% Actually Run Query & Get Data
 print("Starting query...")

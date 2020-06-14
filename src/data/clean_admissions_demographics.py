@@ -16,10 +16,16 @@ pd.set_option("display.max_rows", None)
 # Load, clean, extract demographic & height-weight information
 # %% Load Height, Weight, Date of Birth Table
 raw_data_dir = Path("/home/victoria/aki-forecaster/data/raw")
-print("Loading height-weight-dob table...")
-htwt = pd.read_csv(raw_data_dir / "height_weight.csv").rename(
+print("Loading heights table...")
+heights = pd.read_csv(raw_data_dir / "heights.csv").rename(
+    columns={"valueuom": "height_units"}
+)
+
+print("Loading weights table...")
+weights = pd.read_csv(raw_data_dir / "weights.csv").rename(
     columns={"patientweight": "weight"}
 )
+
 print("Loading admissions table...")
 admissions = (
     pd.read_csv(raw_data_dir / "admissions.csv")
@@ -29,6 +35,7 @@ admissions = (
 print("Finished loading data.")
 
 
+# %%
 def normalize_value(row: pd.Series):
     "Normalizes units of `height` to `inches` based on `height_units`."
     if isinstance(row.height_units, str):
@@ -71,6 +78,9 @@ def process_htwt(subj_id, grp_df):
     return df.apply(get_last_non_nan_value, axis=0).to_dict()
 
 
+# %%
+htwt = heights.append(weights)
+
 # Get only columns we need
 htwt = htwt.loc[:, ["subject_id", "charttime", "weight", "height", "height_units"]]
 # Converts height based on units
@@ -92,28 +102,32 @@ for job in tqdm(as_completed(jobs), total=len(jobs)):
 
 
 height_weight = pd.DataFrame(results)
-
+height_weight = height_weight.loc[:, ["subject_id", "charttime", "weight", "height"]]
 # Uncomment to save
-height_weight.to_csv(
-    Path(
-        "/home/victoria/aki-forecaster/data/interim/patients_height_weight_processed.csv"
-    )
-)
+# height_weight.to_csv(
+# Path(
+#     "/home/victoria/aki-forecaster/data/interim/patients_height_weight_processed.csv"
+# )
+# )
 #%% [markdown]
 # Now we have cleaned demographics, which we will join with hospital admissions table
 #%%
 
-demographics = pd.read_csv(
-    Path.cwd() / "patients_height_weight_processed.csv", header=0, index_col=0
+height_weight = pd.read_csv(
+    Path(
+        "/home/victoria/aki-forecaster/data/interim/patients_height_weight_processed.csv"
+    ),
+    header=0,
+    index_col=0,
 )
 
 
 #%% Merge Admissions data & Convert Dates
 
 pt_info = pd.merge(
-    admissions.loc[:, ["subject_id", "admittime", "ethnicity"]],
-    demographics,
-    how="inner",
+    admissions.loc[:, ["subject_id", "admittime", "gender", "ethnicity", "dob"]],
+    height_weight,
+    how="left",
     on=["subject_id"],
 )
 
@@ -130,7 +144,7 @@ def str_to_datetime(
         return "Unknown Type"
 
 
-pt_info.chart_charttime = pt_info.chart_charttime.apply(str_to_datetime)
+pt_info.charttime = pt_info.charttime.apply(str_to_datetime)
 pt_info.admittime = pt_info.admittime.apply(str_to_datetime)
 pt_info.dob = pt_info.dob.apply(lambda s: s.split(" ")[0]).apply(
     str_to_datetime, format="%Y-%m-%d"
@@ -150,6 +164,10 @@ pt_info["age"] = pt_info.apply(
 ).apply(lambda age: 89 if (age == 300) else age)
 
 #%% Save Merged & Processed Demographics & Hospital Admission Dataferame
-save_filename = Path.cwd() / "patients_htwt_adm.csv"
+save_dir = Path("/home/victoria/aki-forecaster/data/processed")
+save_filename = save_dir / "patients_ht_wt_demographics.csv"
 pt_info.to_csv(save_filename)
 print(f"Saved file: {save_filename}")
+
+
+# %%

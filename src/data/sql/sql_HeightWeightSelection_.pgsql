@@ -52,14 +52,13 @@ SELECT
     weight.starttime,
     weight.endtime,
     weight.patientweight,
-FROM weight
-UNION ALL
-SELECT 
     height.charttime,
     height.label,
     height.height,
     height.valueuom as height_units
-FROM height
+FROM weight
+LEFT JOIN height
+    ON height.subject_id = weight.subject_id
 ORDER BY
     weight.subject_id
 LIMIT 100; -- comment this out for the whole table

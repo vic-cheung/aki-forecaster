@@ -24,11 +24,11 @@ def run_query_and_save(sql: str, filename: str):
 
 
 # %% Query Data
-# run_query_and_save(sql=build_query_lab_events(), filename="lab_events.csv")
-# run_query_and_save(sql=build_query_kidney_events(), filename="kidney_events.csv")
-# run_query_and_save(sql=build_query_adm(), filename="admissions.csv")
-# run_query_and_save(sql=build_query_height(), filename="heights.csv")
-# run_query_and_save(sql=build_query_weight(), filename="weights.csv")
+run_query_and_save(sql=build_query_lab_events(), filename="lab_events.csv")
+run_query_and_save(sql=build_query_kidney_events(), filename="kidney_events.csv")
+run_query_and_save(sql=build_query_adm(), filename="admissions.csv")
+run_query_and_save(sql=build_query_height(), filename="heights.csv")
+run_query_and_save(sql=build_query_weight(), filename="weights.csv")
 run_query_and_save(sql=build_query_lab_items_id(), filename="lab_items_id.csv")
 
 print("All queries are finished!")

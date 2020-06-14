@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 from concurrent.futures import as_completed, ProcessPoolExecutor
+from sklearn.preprocessing import OneHotEncoder
 from tqdm.autonotebook import tqdm
 
 pd.set_option("display.max_columns", None)
@@ -114,9 +115,12 @@ def create_samples(data: pd.DataFrame, window: int = 3):
 
 
 def featurize_X(X_data_raw: pd.DataFrame):
+    df.apply(lambda s: pd.to_numeric(s, errors="coerce").notnull().all())
+
     "Returns pd.DataFrame of Labs"
     X = []
     for x in X_data_raw:
+        x = pd.DataFrame(x)
         mean = x.mean()
         mean.index = [item + "_avg" for item in mean.index]
     X = pd.DataFrame(X)
@@ -194,7 +198,7 @@ new_col_names = dict(
 executor = ProcessPoolExecutor()
 jobs = [
     executor.submit(featurize, csv_file, labs_to_include)
-    for csv_file in tqdm(csv_files)
+    for csv_file in tqdm(csv_files[:10])
 ]
 
 # X, Y = [], []
@@ -208,7 +212,8 @@ jobs = [
 
 results = []
 for job in tqdm(as_completed(jobs), total=len(jobs)):
-    results.append(job.result())
+    if job.result() is not None:
+        results.append(job.result())
 
 # Remove `None` Results
 results = [x for x in results if pd.notnull(x)]

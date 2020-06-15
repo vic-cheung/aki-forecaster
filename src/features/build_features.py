@@ -187,10 +187,12 @@ renamed_labels = lab_ids.apply(uniquify_label, axis=1)
 lab_ids["renamed_label"] = renamed_labels
 labs_to_include = lab_ids.itemid.to_list()
 
+# columns = [col for col in data.columns]
+# categorical = ["50872", "51466", "51487", "51266", "51506", "51508", "51519"]
+# continuous = [item for item in np.setdiff1d(columns, categorical)]
+
 new_col_names = dict(
-    zip(
-        [str(item) + "_avg" for item in lab_ids.itemid], lab_ids.renamed_label + "_avg",
-    )
+    zip([str(item) for item in lab_ids.itemid], lab_ids.renamed_label,)
 )
 
 
@@ -199,22 +201,13 @@ new_col_names = dict(
 executor = ProcessPoolExecutor()
 jobs = [
     executor.submit(featurize, csv_file, labs_to_include)
-    for csv_file in tqdm(csv_files[:10])
+    for csv_file in tqdm(csv_files[1:2])
 ]
 
-X, Y = [], []
+results = []
 for job in tqdm(as_completed(jobs), total=len(jobs)):
-    x, y = job.result()
-    X.append(x)
-    Y.append(y)
-#     # X += [x]
-#     # Y += [y]
-
-# %%
-# results = []
-# for job in tqdm(as_completed(jobs), total=len(jobs)):
-#     if job.result() is not None:
-#         results.append(job.result())
+    if job.result() is not None:
+        results.append(job.result())
 
 # Remove `None` Results
 results = [x for x in results if pd.notnull(x)]

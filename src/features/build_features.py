@@ -127,9 +127,9 @@ def featurize_X(X_data_raw: pd.DataFrame, categorical: list, continuous: list):
     modes_raw = []
     for x in X_data_raw:
         means = x.loc[:, continuous].mean()
-        means.index = [item + "_avg" for item in means.index]
+        # means.index = [item + "_avg" for item in means.index]
         modes = x.loc[:, categorical].iloc[-1]
-        modes.index = [item + "_mode" for item in modes.index]
+        # modes.index = [item + "_mode" for item in modes.index]
         means_raw += [means]
         modes_raw += [modes]
     mean_df = pd.DataFrame(means_raw)
@@ -166,8 +166,8 @@ def featurize(csv_file, labs_to_include: list):
     if "50912" in pt_data.columns:
         # Try to Preprocess Data
         try:
-            X_raw, Y_raw = create_samples(pt_data)
-            x = featurize_X(X_raw)
+            X_raw, Y_raw, categorical, continuous = create_samples(pt_data)
+            x = featurize_X(X_raw, categorical, continuous)
             y = featurize_Y(Y_raw)
             if x.empty or y.empty:
                 return None
@@ -186,20 +186,7 @@ lab_ids = pd.read_csv(data_dir / "lab_items_id.csv")
 renamed_labels = lab_ids.apply(uniquify_label, axis=1)
 lab_ids["renamed_label"] = renamed_labels
 labs_to_include = lab_ids.itemid.to_list()
-# labs_to_exclude = lab_ids[
-#     lab_ids["label"].isin(
-#         [
-#             "Platelet Smear",
-#             "Sodium, Whole Blood",
-#             "Potassium, Whole Blood",
-#             "Chloride, Whole Blood",
-#             "Hematocrit, Calculated",
-#             "WBCP",
-#             "Calculated Bicarbonate, Whole Blood",
-#             "Anti-Neutrophil Cytoplasmic Antibody",
-#         ]
-#     )
-# ].itemid
+
 new_col_names = dict(
     zip(
         [str(item) + "_avg" for item in lab_ids.itemid], lab_ids.renamed_label + "_avg",

@@ -88,7 +88,6 @@ def create_samples(data: pd.DataFrame, window: int = 3):
     )
     cat_mode = data.loc[:, categorical].mode().to_dict("r")[0]  # Create Dataset
     data = data.fillna(value=cat_mode)
-
     X_data_raw = []
     Y_data_raw = []
 
@@ -118,31 +117,24 @@ def create_samples(data: pd.DataFrame, window: int = 3):
 
         # Move Start Interval
         start_date = start_date + pd.Timedelta(days=1)
-    return X_data_raw, Y_data_raw
+    return X_data_raw, Y_data_raw, categorical, continuous
 
 
-def featurize_X(X_data_raw: pd.DataFrame):
+def featurize_X(X_data_raw: pd.DataFrame, categorical: list, continuous: list):
     "Returns pd.DataFrame of Labs"
-    # % define categorical columns vs numerical columns
-    # categoricals = [
-    #     "Anti-Neutrophil Cytoplasmic Antibody",
-    #     "Blood",
-    #     "Nitrite",
-    #     "Platelet Smear",
-    #     "Urine Appearance",
-    #     "Urine Color",
-    #     "Yeast",
-    # ]
-    categoricals = ["50872", "51466", "51487", "51266", "51506", "51508", "51519"]
     X = []
+    means_raw = []
+    modes_raw = []
     for x in X_data_raw:
-        x = pd.DataFrame(x)
-        x.loc[:, categoricals].apply(
-            lambda s: pd.to_numeric(s, errors="coerce").notnull().all()
-        )
-        mean = x.mean()
-        mean.index = [item + "_avg" for item in mean.index]
-    X = pd.DataFrame(X)
+        means = x.loc[:, continuous].mean()
+        means.index = [item + "_avg" for item in means.index]
+        modes = x.loc[:, categorical].iloc[-1]
+        modes.index = [item + "_mode" for item in modes.index]
+        means_raw += [means]
+        modes_raw += [modes]
+    mean_df = pd.DataFrame(means_raw)
+    mode_df = pd.DataFrame(modes_raw).reset_index(drop=True)
+    X = pd.concat([mean_df, mode_df], axis=1)
     return X
 
 
@@ -231,7 +223,7 @@ for job in tqdm(as_completed(jobs), total=len(jobs)):
 #     # X += [x]
 #     # Y += [y]
 
-
+# %%
 # results = []
 # for job in tqdm(as_completed(jobs), total=len(jobs)):
 #     if job.result() is not None:

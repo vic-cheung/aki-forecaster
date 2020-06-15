@@ -3,7 +3,6 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 from concurrent.futures import as_completed, ProcessPoolExecutor
-from sklearn.preprocessing import OneHotEncoder
 from tqdm.autonotebook import tqdm
 
 pd.set_option("display.max_columns", None)
@@ -78,10 +77,18 @@ def create_samples(data: pd.DataFrame, window: int = 3):
 
     # Make index datetime
     data.index = pd.to_datetime(data.index)
-    # Interpolate NaN values
-    data = data.interpolate(limit_direction="both")
+    # Interpolate NaN values of numerical columns
+    columns = [col for col in data.columns]
+    categorical = ["50872", "51466", "51487", "51266", "51506", "51508", "51519"]
+    continuous = [item for item in np.setdiff1d(columns, categorical)]
+    data.loc[:, continuous] = (
+        data.loc[:, continuous]
+        .apply(pd.to_numeric, errors="coerce")
+        .interpolate(limit_direction="both")
+    )
+    cat_mode = data.loc[:, categorical].mode().to_dict("r")[0]  # Create Dataset
+    data = data.fillna(value=cat_mode)
 
-    # Create Dataset
     X_data_raw = []
     Y_data_raw = []
 
@@ -115,12 +122,24 @@ def create_samples(data: pd.DataFrame, window: int = 3):
 
 
 def featurize_X(X_data_raw: pd.DataFrame):
-    df.apply(lambda s: pd.to_numeric(s, errors="coerce").notnull().all())
-
     "Returns pd.DataFrame of Labs"
+    # % define categorical columns vs numerical columns
+    # categoricals = [
+    #     "Anti-Neutrophil Cytoplasmic Antibody",
+    #     "Blood",
+    #     "Nitrite",
+    #     "Platelet Smear",
+    #     "Urine Appearance",
+    #     "Urine Color",
+    #     "Yeast",
+    # ]
+    categoricals = ["50872", "51466", "51487", "51266", "51506", "51508", "51519"]
     X = []
     for x in X_data_raw:
         x = pd.DataFrame(x)
+        x.loc[:, categoricals].apply(
+            lambda s: pd.to_numeric(s, errors="coerce").notnull().all()
+        )
         mean = x.mean()
         mean.index = [item + "_avg" for item in mean.index]
     X = pd.DataFrame(X)
@@ -140,6 +159,7 @@ def featurize(csv_file, labs_to_include: list):
     Featurize `X`, then Featurize `Y.  Returns `X` & `Y`.
     """
     pt_data = pd.read_csv(csv_file, header=[0, 1], index_col=0).labevents_value
+
     # Only consider patients who have all columns in `labs_to_include`
     cols_to_add = [
         item
@@ -193,6 +213,8 @@ new_col_names = dict(
         [str(item) + "_avg" for item in lab_ids.itemid], lab_ids.renamed_label + "_avg",
     )
 )
+
+
 # %%
 # Use Concurrent to featurize samples
 executor = ProcessPoolExecutor()
@@ -201,19 +223,19 @@ jobs = [
     for csv_file in tqdm(csv_files[:10])
 ]
 
-# X, Y = [], []
-# for job in tqdm(as_completed(jobs), total=len(jobs)):
-#     x, y = job.result()
-#     X.append(x)
-#     Y.append(y)
+X, Y = [], []
+for job in tqdm(as_completed(jobs), total=len(jobs)):
+    x, y = job.result()
+    X.append(x)
+    Y.append(y)
 #     # X += [x]
 #     # Y += [y]
 
 
-results = []
-for job in tqdm(as_completed(jobs), total=len(jobs)):
-    if job.result() is not None:
-        results.append(job.result())
+# results = []
+# for job in tqdm(as_completed(jobs), total=len(jobs)):
+#     if job.result() is not None:
+#         results.append(job.result())
 
 # Remove `None` Results
 results = [x for x in results if pd.notnull(x)]

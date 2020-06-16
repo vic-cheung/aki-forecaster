@@ -1,40 +1,43 @@
+# %%
 import pandas as pd
 import numpy as np
+from pathlib import Path
+
+pd.set_option("display.max_columns", None)
+pd.set_option("display.max_rows", None)
 
 
-def simplify_label(label: str) -> str:
-    "Simplifies `label` with comma in it by dropping after comma."
-    split_label = label.split(", ")
-    if len(split_label) == 1:
-        return label
-    elif split_label[1] in ("Whole Blood", "Blood", "Urine", "Calculated"):
-        return split_label[0]
-    else:
-        return label
+
+#%%
+subj_id_labs = Path("/home/victoria/aki-forecaster/data/interim/subj_id_labs")
+csv_files = [file for file in subj_id_labs.iterdir()]
+csv_file = csv_files[1]
+pt_data = pd.read_csv(csv_file, header=0, index_col=0)
+
+#%%
+pt_data = pt_data.fillna("None")
+#%%
+series = pt_data["Nitrite[U-H]"]
 
 
-def uniquify_label(row: pd.Series):
-    "Uniquifies `label` by appending abbreviated `fluid` and `category`"
+def categorical_to_one_hot(series: pd.Series) -> pd.DataFrame:
+    "Transforms all categorical columns into multiple one-hot columns."
+    categories = series.unique()
+    encoder = OneHotEncoder()
+    # Generate OneHotEncoder
+    encoder.fit(categories.reshape(-1, 1))
+    # Transform all values in series to One-Hot Encoding
+    one_hot = encoder.transform(series.values.reshape(-1, 1)).toarray()
+    # Return pd.DataFrame that is original Series in One-Hot Encoding
+    one_hot_column_names = [series.name + ">" + cat for cat in encoder.categories_]
+    return pd.DataFrame(one_hot, columns=one_hot_column_names).as
 
-    label = simplify_label(row.label)
 
-    if row.fluid.lower() == "blood":
-        fluid_str = "B"
-    elif row.fluid.lower() == "urine":
-        fluid_str = "U"
-    else:
-        fluid_str = "X"
-    if row.category.lower() == "hematology":
-        cat_str = "H"
-    elif row.category.lower() == "chemistry":
-        cat_str = "C"
-    elif row.category.lower() == "blood gas":
-        cat_str = "G"
-    else:
-        cat_str = "X"
+res = categorical_to_one_hot(series)
 
-    new_label = label + f"[{fluid_str}-{cat_str}]"
-    return new_label
+#%%
+
+#%%
 
 
 def create_samples(data: pd.DataFrame, window: int = 3):
@@ -47,20 +50,30 @@ def create_samples(data: pd.DataFrame, window: int = 3):
 
     # Make index datetime
     data.index = pd.to_datetime(data.index)
-    # Interpolate NaN values of numerical columns
-    columns = [col for col in data.columns]
-    categorical = ["50872", "51466", "51487", "51266", "51506", "51508", "51519"]
-    continuous = [item for item in np.setdiff1d(columns, categorical)]
-    data.loc[:, continuous] = (
-        data.loc[:, continuous]
-        .apply(pd.to_numeric, errors="coerce")
-        .interpolate(limit_direction="both")
-    )
-    try:
-        cat_mode = data.loc[:, categorical].mode().to_dict("r")[0]  # Create Dataset
-        data = data.fillna(value=cat_mode)
-    except Exception:
-        print("No values in cat_mode")
+
+    # # Identify Categorical & Continuous Features
+    # categorical = [
+    #     "Anti-Neutrophil Cytoplasmic Antibody[B-C]",
+    #     "Blood[U-H]",
+    #     "Nitrite[U-H]",
+    #     "Platelet Smear[B-H]",
+    #     "Urine Appearance[U-H]",
+    #     "Urine Color[U-H]",
+    #     "Yeast[U-H]",
+    # ]
+    # continuous = list(np.setdiff1d(data.columns, categorical))
+    # # Interpolate NaN values of numerical features
+    # data.loc[:, continuous] = (
+    #     data.loc[:, continuous]
+    #     .apply(pd.to_numeric, errors="coerce")
+    #     .interpolate(limit_direction="both")
+    # )
+    # #
+    # try:
+    #     cat_mode = data.loc[:, categorical].mode().to_dict("r")[0]  # Create Dataset
+    #     data = data.fillna(value=cat_mode)
+    # except Exception:
+    #     print("No values in cat_mode")
 
     X_data_raw = []
     Y_data_raw = []
@@ -83,7 +96,7 @@ def create_samples(data: pd.DataFrame, window: int = 3):
         # Only add x & y if both are not empty dataframes
         # and if there is a `y` label
         if (not x.empty) and (not y.empty):
-            if not y["50912"].empty:
+            if not y["Creatinine[B-C]"].empty:
                 # Add X to Dataset
                 X_data_raw += [x]
                 # Add Y to Dataset
@@ -91,7 +104,7 @@ def create_samples(data: pd.DataFrame, window: int = 3):
 
         # Move Start Interval
         start_date = start_date + pd.Timedelta(days=1)
-    return X_data_raw, Y_data_raw, categorical, continuous
+    return X_data_raw, Y_data_raw
 
 
 def featurize_X(X_data_raw: pd.DataFrame, categorical: list, continuous: list):
@@ -114,36 +127,26 @@ def featurize_X(X_data_raw: pd.DataFrame, categorical: list, continuous: list):
 
 def featurize_Y(Y_data_raw: pd.DataFrame):
     "Returns pd.Series of Creatinine for day after X"
-    Y_cr_only = [Y["50912"] for Y in Y_data_raw]
+    Y_cr_only = [Y["Creatinine[B-C]"] for Y in Y_data_raw]
     Y = pd.Series([item.mean() for item in Y_cr_only], name="Creatinine_avg")
     return Y
 
 
-def featurize(csv_file, labs_to_include: list):
+def featurize(csv_file):
     """Generate final `X` & `Y` dataframes used for modeling.
     Splits raw lab data into samples based on sliding window in `create_samples`.
     Featurize `X`, then Featurize `Y.  Returns `X` & `Y`.
     """
-    pt_data = pd.read_csv(csv_file, header=[0, 1], index_col=0).labevents_value
-
-    # Only consider patients who have all columns in `labs_to_include`
-    cols_to_add = [
-        item
-        for item in [str(item) for item in labs_to_include]
-        if item not in pt_data.columns
-    ]
-    # Add columns
-    for col in cols_to_add:
-        pt_data[col] = np.nan
-    pt_data = pt_data.loc[:, pt_data.columns.isin(labs_to_include)]
+    pt_data = pd.read_csv(csv_file, header=[0, 1], index_col=0)
 
     # Only create training example if patient has Creatinine Value (corresponding to itemid: 50912)
-    if "50912" in pt_data.columns:
+    if "Creatinine[B-C]" in pt_data.columns:
         # Try to Preprocess Data
         try:
             X_raw, Y_raw, categorical, continuous = create_samples(pt_data)
             x = featurize_X(X_raw, categorical, continuous)
             y = featurize_Y(Y_raw)
+            return x, y
             if x.empty or y.empty:
                 return None
             else:
@@ -152,3 +155,6 @@ def featurize(csv_file, labs_to_include: list):
         except Exception as e:
             print(f"Error occurred in file: {csv_file}.  Error: {e}")
             return None
+
+
+# %%

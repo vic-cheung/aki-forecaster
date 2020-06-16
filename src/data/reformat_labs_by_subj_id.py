@@ -61,6 +61,8 @@ lab_ids["name"] = lab_ids.apply(uniquify_label, axis=1)
 lab_ids.to_csv(data_dir / "lab_items_id_with_names.csv")
 # Create Dict mapping lab IDs to names
 lab_id_to_name = {k: v for k, v in lab_ids.loc[:, ["itemid", "name"]].values}
+
+
 #%% [markdown]
 # Generate Dataframe of Labs for each SubjectID
 #%%
@@ -82,6 +84,7 @@ def pivot_labs_and_save(subj_id, subj_id_grp) -> pd.DataFrame:
         pivoted[col] = np.nan
     # Rename columns using `name` instead of `lab id`
     pivoted = pivoted.rename(columns=lab_id_to_name)
+
     # Save File
     data_dir = Path("/home/victoria/aki-forecaster/data/interim")
     save_filename = data_dir / "subj_id_labs" / f"{subj_id}.csv"

@@ -27,13 +27,27 @@ results = []
 for job in tqdm(as_completed(jobs), total=len(jobs)):
     if job.result() is not None:
         results.append(job.result())
-
-# Remove `None` Results
 results = [x for x in results if pd.notnull(x)]
 
-# Concatenate x's & y's derived from each patient into single `X` and `Y` matrix
-X = pd.concat([item["x"] for item in results], axis=0)
-Y = pd.concat([item["y"] for item in results], axis=0)
+# %%
+
+# Use Concurrent to featurize samples
+executor = ProcessPoolExecutor()
+jobs = [executor.submit(featurize, csv_file) for csv_file in tqdm(csv_files[:10])]
+
+X, Y = [], []
+for job in tqdm(as_completed(jobs), total=len(jobs)):
+    x, y = job.result()
+    X.append(x)
+    Y.append(y)
+
+# Remove `None` Results
+X = [item for item in X if not item.empty]
+Y = [item for item in Y if not item.empty]
+
+# Join all featurized samples
+X = pd.concat(X, axis=0)
+Y = pd.concat(Y, axis=0)
 
 # %%
 # Save Train Data

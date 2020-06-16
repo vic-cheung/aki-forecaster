@@ -19,17 +19,6 @@ csv_files = [file for file in subj_id_labs.iterdir()]
 data_dir = Path("/home/victoria/aki-forecaster/data/raw")
 
 # %%
-# Use Concurrent to featurize samples
-executor = ProcessPoolExecutor()
-jobs = [executor.submit(featurize, csv_file) for csv_file in tqdm(csv_files[:5])]
-
-results = []
-for job in tqdm(as_completed(jobs), total=len(jobs)):
-    if job.result() is not None:
-        results.append(job.result())
-results = [x for x in results if pd.notnull(x)]
-
-# %%
 
 # Use Concurrent to featurize samples
 executor = ProcessPoolExecutor()

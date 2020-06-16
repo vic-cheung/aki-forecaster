@@ -32,7 +32,7 @@ new_col_names = dict(
 executor = ProcessPoolExecutor()
 jobs = [
     executor.submit(featurize, csv_file, labs_to_include)
-    for csv_file in tqdm(csv_files[:100])
+    for csv_file in tqdm(csv_files[:50])
 ]
 
 results = []

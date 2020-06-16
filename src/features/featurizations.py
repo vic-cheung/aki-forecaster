@@ -1,3 +1,7 @@
+import pandas as pd
+import numpy as np
+
+
 def simplify_label(label: str) -> str:
     "Simplifies `label` with comma in it by dropping after comma."
     split_label = label.split(", ")
@@ -40,19 +44,6 @@ def create_samples(data: pd.DataFrame, window: int = 3):
     `X` is all lab values in days specified in `window`
     `Y` is all lab values in day following `X`
     """
-    # col_to_drop = [
-    #     "Platelet Smear",
-    #     "Sodium, Whole Blood",
-    #     "Potassium, Whole Blood",
-    #     "Chloride, Whole Blood",
-    #     "Hematocrit, Calculated",
-    #     "WBCP",
-    #     "Calculated Bicarbonate, Whole Blood",
-    #     "Anti-Neutrophil Cytoplasmic Antibody",
-    # ]
-    # for col in col_to_drop:
-    #     if col in data.columns:
-    #         data = data.drop(columns=col)
 
     # Make index datetime
     data.index = pd.to_datetime(data.index)

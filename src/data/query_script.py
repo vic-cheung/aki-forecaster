@@ -1,7 +1,7 @@
 #!/home/victoria/miniconda3/envs/mimic3/bin python
 # %% import libraries
 from pathlib import Path
-from connect_and_run_pgsql import run_query
+from src.data.connect_and_run_pgsql import run_query
 from src.data.query_inputs_to_mimic import (
     build_query_lab_events,
     build_query_kidney_events,

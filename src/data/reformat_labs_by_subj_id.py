@@ -5,6 +5,8 @@ from pathlib import Path
 from concurrent.futures import as_completed, ProcessPoolExecutor
 from tqdm.autonotebook import tqdm
 
+pd.set_option("display.max_columns", None)
+pd.set_option("display.max_rows", None)
 
 #%% [markdown]
 # Save Lab Files by Subject ID
@@ -55,8 +57,21 @@ def uniquify_label(row: pd.Series):
     return new_label
 
 
-# Create mapping from lab ID to name
+# Create mapping from lab ID to name, add _cat to denote categorical columns
 lab_ids["name"] = lab_ids.apply(uniquify_label, axis=1)
+
+categorical = [
+    "Anti-Neutrophil Cytoplasmic Antibody[B-C]",
+    "Blood[U-H]",
+    "Nitrite[U-H]",
+    "Platelet Smear[B-H]",
+    "Urine Appearance[U-H]",
+    "Urine Color[U-H]",
+    "Yeast[U-H]",
+]
+new_cat_names = dict(zip(categorical, [cat + "_cat" for cat in categorical]))
+lab_ids = lab_ids.replace({"name": new_cat_names})
+
 # Save Updated Lab ID Table with Names
 lab_ids.to_csv(data_dir / "lab_items_id_with_names.csv")
 # Create Dict mapping lab IDs to names

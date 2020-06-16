@@ -8,20 +8,8 @@ from tqdm.autonotebook import tqdm
 pd.set_option("display.max_columns", None)
 pd.set_option("display.max_rows", None)
 
-#%% [markdown]
-# Save Lab Files by Subject ID
-# %% Load Labs Table
-print("Loading labs table...")
-data_dir = Path("/home/victoria/aki-forecaster/data/raw")
-lab_table = pd.read_csv(data_dir / "lab_events.csv").rename(
-    columns={"labevents_itemid": "itemid"}
-)
-print("Loaded")
 
-#%% Load Lab Items ID Table
-lab_ids = pd.read_csv(data_dir / "lab_items_id.csv")
-
-
+# define functions to modify labeling of lab data
 def simplify_label(label: str) -> str:
     "Simplifies `label` with comma in it by dropping after comma."
     split_label = label.split(", ")
@@ -33,6 +21,7 @@ def simplify_label(label: str) -> str:
         return label
 
 
+# make label names unique by adding fluid and category abbv.
 def uniquify_label(row: pd.Series):
     "Uniquifies `label` by appending abbreviated `fluid` and `category`"
 
@@ -57,32 +46,7 @@ def uniquify_label(row: pd.Series):
     return new_label
 
 
-# Create mapping from lab ID to name, add _cat to denote categorical columns
-lab_ids["name"] = lab_ids.apply(uniquify_label, axis=1)
-
-categorical = [
-    "Anti-Neutrophil Cytoplasmic Antibody[B-C]",
-    "Blood[U-H]",
-    "Nitrite[U-H]",
-    "Platelet Smear[B-H]",
-    "Urine Appearance[U-H]",
-    "Urine Color[U-H]",
-    "Yeast[U-H]",
-]
-new_cat_names = dict(zip(categorical, [cat + "_cat" for cat in categorical]))
-lab_ids = lab_ids.replace({"name": new_cat_names})
-
-# Save Updated Lab ID Table with Names
-lab_ids.to_csv(data_dir / "lab_items_id_with_names.csv")
-# Create Dict mapping lab IDs to names
-lab_id_to_name = {k: v for k, v in lab_ids.loc[:, ["itemid", "name"]].values}
-
-
-#%% [markdown]
 # Generate Dataframe of Labs for each SubjectID
-#%%
-
-
 def pivot_labs_and_save(subj_id, subj_id_grp) -> pd.DataFrame:
     "Pivotes Long Table of Lab IDs for each SubjectID to unique LabID per col, saves file."
     # Pivot Labs for each Subject ID
@@ -105,6 +69,40 @@ def pivot_labs_and_save(subj_id, subj_id_grp) -> pd.DataFrame:
     save_filename = data_dir / "subj_id_labs" / f"{subj_id}.csv"
     pivoted.to_csv(save_filename)
     # print(f"Saved file: {save_filename}")
+
+
+#%% [markdown]
+# Save Lab Files by Subject ID
+# %% Load Labs Table
+print("Loading labs table...")
+data_dir = Path("/home/victoria/aki-forecaster/data/raw")
+lab_table = pd.read_csv(data_dir / "lab_events.csv").rename(
+    columns={"labevents_itemid": "itemid"}
+)
+print("Loaded")
+
+#%% Load Lab Items ID Table
+lab_ids = pd.read_csv(data_dir / "lab_items_id.csv")
+
+# Create mapping from lab ID to name, add _cat to denote categorical columns
+lab_ids["name"] = lab_ids.apply(uniquify_label, axis=1)
+
+categorical = [
+    "Anti-Neutrophil Cytoplasmic Antibody[B-C]",
+    "Blood[U-H]",
+    "Nitrite[U-H]",
+    "Platelet Smear[B-H]",
+    "Urine Appearance[U-H]",
+    "Urine Color[U-H]",
+    "Yeast[U-H]",
+]
+new_cat_names = dict(zip(categorical, [cat + "_cat" for cat in categorical]))
+lab_ids = lab_ids.replace({"name": new_cat_names})
+
+# Save Updated Lab ID Table with Names
+lab_ids.to_csv(data_dir / "lab_items_id_with_names.csv")
+# Create Dict mapping lab IDs to names
+lab_id_to_name = {k: v for k, v in lab_ids.loc[:, ["itemid", "name"]].values}
 
 
 # Use Concurrent To Save Files in Parallel

@@ -33,7 +33,7 @@ results = [x for x in results if pd.notnull(x)]
 
 # Use Concurrent to featurize samples
 executor = ProcessPoolExecutor()
-jobs = [executor.submit(featurize, csv_file) for csv_file in tqdm(csv_files[:10])]
+jobs = [executor.submit(featurize, csv_file) for csv_file in tqdm(csv_files)]
 
 X, Y = [], []
 for job in tqdm(as_completed(jobs), total=len(jobs)):

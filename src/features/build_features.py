@@ -86,8 +86,12 @@ def create_samples(data: pd.DataFrame, window: int = 3):
         .apply(pd.to_numeric, errors="coerce")
         .interpolate(limit_direction="both")
     )
-    cat_mode = data.loc[:, categorical].mode().to_dict("r")[0]  # Create Dataset
-    data = data.fillna(value=cat_mode)
+    try:
+        cat_mode = data.loc[:, categorical].mode().to_dict("r")[0]  # Create Dataset
+        data = data.fillna(value=cat_mode)
+    except Exception:
+        print("No values in cat_mode")
+
     X_data_raw = []
     Y_data_raw = []
 
@@ -161,6 +165,7 @@ def featurize(csv_file, labs_to_include: list):
     # Add columns
     for col in cols_to_add:
         pt_data[col] = np.nan
+    pt_data = pt_data.loc[:, pt_data.columns.isin(labs_to_include)]
 
     # Only create training example if patient has Creatinine Value (corresponding to itemid: 50912)
     if "50912" in pt_data.columns:
@@ -201,7 +206,7 @@ new_col_names = dict(
 executor = ProcessPoolExecutor()
 jobs = [
     executor.submit(featurize, csv_file, labs_to_include)
-    for csv_file in tqdm(csv_files[1:2])
+    for csv_file in tqdm(csv_files[:100])
 ]
 
 results = []
@@ -216,10 +221,7 @@ results = [x for x in results if pd.notnull(x)]
 X = pd.concat([item["x"] for item in results], axis=0).rename(columns=new_col_names)
 Y = pd.concat([item["y"] for item in results], axis=0)
 
-# # Join all featurized samples
-# X = pd.concat(X, axis=0)
-# Y = pd.concat(Y, axis=0)
-
+# %%
 # Save Train Data
 processed_dir = Path("/home/victoria/aki-forecaster/data/processed")
 X.to_csv(processed_dir / "X.csv")

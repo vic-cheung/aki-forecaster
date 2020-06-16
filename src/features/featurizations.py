@@ -1,7 +1,6 @@
 # %%
 import pandas as pd
-
-# import numpy as np
+import numpy as np
 from pathlib import Path
 
 pd.set_option("display.max_columns", None)
@@ -130,7 +129,18 @@ def featurize(csv_file):
     """
     pt_data = pd.read_csv(csv_file, header=0, index_col=0)
     pt_data = pt_data.loc[:, ~pt_data.columns.str.contains(pat="_cat")]
-
+    pt = int(csv_files[1].name.split(".")[0])
+    demographics = pd.read_csv(
+        Path(
+            "/home/victoria/aki-forecaster/data/processed/patients_ht_wt_demographics.csv"
+        ),
+        header=0,
+        index_col=0,
+    )
+    pt_demographics = demographics[demographics["subject_id"] == pt].loc[
+        :, ["gender", "ethnicity", "weight", "height", "age"]
+    ]
+    demographics_dict = pt_demographics.to_dict("records")[0]
     # Only create training example if patient has Creatinine Value (corresponding to itemid: 50912)
     if "Creatinine[B-C]" in pt_data.columns:
         # Try to Preprocess Data
@@ -138,6 +148,9 @@ def featurize(csv_file):
             X_raw, Y_raw = create_samples(pt_data)
             x = featurize_X(X_raw)
             y = featurize_Y(Y_raw)
+            for col in pt_demographics.columns:
+                x[col] = np.nan
+            x = x.fillna(demographics_dict)
             return x, y
             if x.empty or y.empty:
                 return None

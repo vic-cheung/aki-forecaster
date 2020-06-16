@@ -129,7 +129,7 @@ def featurize(csv_file):
     """
     pt_data = pd.read_csv(csv_file, header=0, index_col=0)
     pt_data = pt_data.loc[:, ~pt_data.columns.str.contains(pat="_cat")]
-    pt = int(csv_files[1].name.split(".")[0])
+    pt = int(csv_file.name.split(".")[0])
     demographics = pd.read_csv(
         Path(
             "/home/victoria/aki-forecaster/data/processed/patients_ht_wt_demographics.csv"

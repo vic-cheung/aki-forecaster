@@ -20,6 +20,10 @@ categorical = [
     "Urine Color[U-H]",
     "Yeast[U-H]",
 ]
+res = pt_data.loc[:, ~pt_data.columns.str.contains(pat="_cat")]
+#%%
+# pt_data = pt_data.fillna("None")
+# series = pt_data["Nitrite[U-H]"]
 
 
 def get_unique_categorical_values(csv_file):

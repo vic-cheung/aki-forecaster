@@ -35,6 +35,7 @@ def create_regressors(params: dict) -> xgb.XGBRegressor:
         subsample=params.subsample,
         colsample_bytree=params.colsample_bytree,
         random_state=123,
+        missing=-999,
     )
     return model
 
@@ -97,7 +98,7 @@ Y_filled = Y.fillna(-999)
 X_train, X_test, Y_train, Y_test = train_test_split(
     X_filled.reset_index(drop=True),
     Y_filled.reset_index(drop=True),
-    test_size=0.2,
+    test_size=0.4,
     random_state=123,
 )
 X_test, X_valid, Y_test, Y_valid = train_test_split(
@@ -121,6 +122,18 @@ Y_test: {Y_test.shape}
 """
 )
 
+# Save Train Data
+processed_dir = Path(
+    "/home/victoria/aki-forecaster/data/processed/continuous_vars_only"
+)
+X_train.to_csv(processed_dir / "X_train.csv")
+Y_train.to_csv(processed_dir / "Y_train.csv")
+X_valid.to_csv(processed_dir / "X_valid.csv")
+Y_valid.to_csv(processed_dir / "Y_valid.csv")
+X_test.to_csv(processed_dir / "X_test.csv")
+Y_test.to_csv(processed_dir / "Y_test.csv")
+
+print("Train/Validate/Test sets saved")
 
 #%%
 # Create Models with different Hyperparameters
@@ -148,7 +161,7 @@ trained_models = [train_model_and_save(x) for x in tqdm(models)]
 
 print("All models trained!")
 
-
+# %%
 kfold = StratifiedKFold(n_splits=10, random_state=7)
 results = cross_val_score(trained_models, X, Y, cv=kfold)
 print("Accuracy: %.2f%% (%.2f%%)" % (results.mean() * 100, results.std() * 100))

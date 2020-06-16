@@ -8,7 +8,7 @@ import itertools
 import collections
 import pickle
 from tqdm.autonotebook import tqdm
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, StratifiedKFold, cross_val_score
 
 # from sklearn.linear_model import LogisticRegression, LinearRegression
 # from sklearn.metrics import explained_variance_score, mean_squared_error, r2_score
@@ -16,66 +16,6 @@ import xgboost as xgb
 
 pd.set_option("display.max_columns", None)
 pd.set_option("display.max_rows", None)
-
-# %% load data
-X = pd.read_csv(
-    Path("/home/victoria/aki-forecaster/data/processed/continuous_vars_only/X.csv"),
-    header=0,
-    index_col=0,
-)
-Y = pd.read_csv(
-    Path("/home/victoria/aki-forecaster/data/processed/continuous_vars_only/Y.csv"),
-    header=0,
-    index_col=0,
-)
-# %% assign numbers to each unique ethnicicty
-ethnicity_id = dict(enumerate(X.ethnicity.unique().tolist()))
-pd.Series(ethnicity_id).to_csv(
-    Path.cwd() / "processed_data_linreg" / "ethnicity_id.csv"
-)
-# invert keys and values so categorical becomes a number
-ethnicity_id_inverse = dict(zip(ethnicity_id.values(), ethnicity_id.keys()))
-X.ethnicity = X.ethnicity.map(ethnicity_id_inverse)
-# %% fill NaNs with median value
-X_filled = round(X.fillna(X.median()), 2)
-X_filled_mask = X_filled.isnull().sum(axis=0).astype(bool)
-X_filled = X_filled.loc[:, ~X_filled_mask]
-final_col_names = dict(zip(range(len(X_filled.columns)), X_filled.columns))
-Y = round(Y.fillna(Y.median()), 2)
-# %% split training and test data
-X_train, X_test, Y_train, Y_test = train_test_split(
-    X_filled.reset_index(drop=True),
-    Y.reset_index(drop=True),
-    test_size=0.2,
-    random_state=123,
-)
-
-X_test, X_valid, Y_test, Y_valid = train_test_split(
-    X_test, Y_test, test_size=0.5, random_state=123
-)
-
-print(
-    f"""
-X_train: {X_train.shape}
-X_valid: {X_valid.shape}
-X_test: {X_test.shape}
-Y_train: {Y_train.shape}
-Y_valid: {Y_valid.shape}
-Y_test: {Y_test.shape}
-"""
-)
-
-
-#%%
-# Create Models with different Hyperparameters
-# params = {
-#     "learning_rate": [0.1, 0.3, 1.0],
-#     "max_depth": [5, 10],
-#     "reg_lambda": [0.1, 0.3, 1.0],
-#     "n_estimators": [1000, 5000, 10000, 30000],
-#     "subsample": [0.3, 0.5, 1.0],
-#     "colsample_bytree": [0.3, 0.5, 1.0],
-# }
 
 
 def named_product(**items):
@@ -99,21 +39,7 @@ def create_regressors(params: dict) -> xgb.XGBRegressor:
     return model
 
 
-# %% for the purpose of the mvp
-params = {
-    "learning_rate": [0.1],
-    "max_depth": [5],
-    "reg_lambda": [0.3],
-    "n_estimators": [30000, 50000, 100000],
-    "subsample": [0.5],
-    "colsample_bytree": [1.0],
-}
-# Create all models (total # is unique combination of all parameters)
-models = [create_regressors(x) for x in named_product(**params)]
-
 #%% Train Models
-
-
 def train_model(model: xgb.XGBRegressor):
     print(f"Training model with parameters: \n{model.get_xgb_params()}")
     return model.fit(
@@ -145,6 +71,84 @@ def train_model_and_save(
     return result
 
 
+# %% load data
+X = pd.read_csv(
+    Path("/home/victoria/aki-forecaster/data/processed/continuous_vars_only/X.csv"),
+    header=0,
+    index_col=0,
+).iloc[:, :69]
+Y = pd.read_csv(
+    Path("/home/victoria/aki-forecaster/data/processed/continuous_vars_only/Y.csv"),
+    header=0,
+    index_col=0,
+)
+# %% integer encode ethnicity and gender
+ethnicity_id = dict(enumerate(X.ethnicity.unique().tolist()))
+# invert keys and values so categorical becomes a number, map it onto
+ethnicity_id_inverse = dict(zip(ethnicity_id.values(), ethnicity_id.keys()))
+X.ethnicity = X.ethnicity.map(ethnicity_id_inverse)
+
+gender_dict = {"M": 0, "F": 1}
+X.gender = X.gender.map(gender_dict)
+# %% fill NaNs with -999 nonsensical value for XGBoost
+X_filled = X.fillna(-999)
+Y_filled = Y.fillna(-999)
+# %% split training and test data
+X_train, X_test, Y_train, Y_test = train_test_split(
+    X_filled.reset_index(drop=True),
+    Y_filled.reset_index(drop=True),
+    test_size=0.2,
+    random_state=123,
+)
+X_test, X_valid, Y_test, Y_valid = train_test_split(
+    X_test, Y_test, test_size=0.5, random_state=123
+)
+# join test set back to train set
+X_train = X_train.append(X_test)
+Y_train = Y_train.append(Y_test)
+
+# sanity check dimensions of the sets
+print(
+    f"""
+X_train: {X_train.shape}
+Y_train: {Y_train.shape}
+
+X_valid: {X_valid.shape}
+Y_valid: {Y_valid.shape}
+
+X_test: {X_test.shape}
+Y_test: {Y_test.shape}
+"""
+)
+
+
+#%%
+# Create Models with different Hyperparameters
+# params = {
+#     "learning_rate": [0.1, 0.3, 1.0],
+#     "max_depth": [5, 10],
+#     "reg_lambda": [0.1, 0.3, 1.0],
+#     "n_estimators": [1000, 5000, 10000, 30000],
+#     "subsample": [0.3, 0.5, 1.0],
+#     "colsample_bytree": [0.3, 0.5, 1.0],
+# }
+
+params = {
+    "learning_rate": [0.1],
+    "max_depth": [5],
+    "reg_lambda": [0.3],
+    "n_estimators": [30000, 50000, 100000],
+    "subsample": [0.5],
+    "colsample_bytree": [1.0],
+}
+# Create all models (total # is unique combination of all parameters)
+models = [create_regressors(x) for x in named_product(**params)]
 # Train all models
 trained_models = [train_model_and_save(x) for x in tqdm(models)]
+
 print("All models trained!")
+
+
+kfold = StratifiedKFold(n_splits=10, random_state=7)
+results = cross_val_score(trained_models, X, Y, cv=kfold)
+print("Accuracy: %.2f%% (%.2f%%)" % (results.mean() * 100, results.std() * 100))

@@ -82,7 +82,7 @@ def build_query_lab_events(
 
     sql = f"""
     SELECT
-        le.subject_id,
+        le.hadm_id,
         le.itemid AS labevents_itemid,
         le.charttime,
         labitems.label,
@@ -130,7 +130,7 @@ def build_query_lab_events(
         ) AS labitems
     ON labitems.itemid = le.itemid
     ORDER BY
-        le.subject_id,
+        le.hadm_id,
         le.charttime
     """
     return dedent(sql)
@@ -238,6 +238,8 @@ def build_query_kidney_events() -> str:
         WHERE
             (lower(icd.short_title) LIKE '%kidney%') OR
             (lower(icd.short_title) LIKE 'renal%')
+        ORDER BY 
+            diag.hadm_id
         """
     return dedent(sql)
 
@@ -245,7 +247,7 @@ def build_query_kidney_events() -> str:
 def build_query_adm() -> str:
     sql = """
         SELECT
-            adm.subject_id,
+            adm.hadm_id,
             adm.admittime,
             adm.dischtime,
             adm.admission_type,
@@ -260,7 +262,7 @@ def build_query_adm() -> str:
         LEFT JOIN mimiciii.patients AS p
             ON p.subject_id = adm.subject_id
         ORDER BY
-            adm.subject_id
+            adm.hadm_id
         """
     return dedent(sql)
 
@@ -268,7 +270,7 @@ def build_query_adm() -> str:
 def build_query_height() -> str:
     sql = """
     SELECT
-        chart.subject_id,
+        chart.hadm_id,
         chart.charttime,
         chart.value AS height,
         chart.valueuom
@@ -300,7 +302,7 @@ def build_query_height() -> str:
         ) AS height_label
         ON height_label.itemid = chart.itemid
     ORDER BY
-        chart.subject_id
+        chart.hadm_id
     """
     return dedent(sql)
 
@@ -308,13 +310,13 @@ def build_query_height() -> str:
 def build_query_weight() -> str:
     sql = """
     SELECT
-        ie.subject_id,
+        ie.hadm_id,
         ie.starttime,
         ie.endtime,
         ie.patientweight
     FROM
         mimiciii.inputevents_mv as ie
     ORDER BY
-        ie.subject_id
+        ie.hadm_id
     """
     return dedent(sql)

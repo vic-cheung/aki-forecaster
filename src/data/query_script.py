@@ -15,7 +15,7 @@ print("Starting Script...")
 
 
 def run_query_and_save(sql: str, filename: str):
-    data_dir = Path("/home/victoria/aki-forecaster/data/raw")
+    data_dir = Path("/home/victoria/aki-forecaster/data/raw_hadmid")
     filename = data_dir / filename
     print("Starting query...")
     df = run_query(sql)

@@ -15,7 +15,7 @@ pd.set_option("display.max_rows", None)
 #%% [markdown]
 # Load, clean, extract demographic & height-weight information
 # %% Load Height, Weight, Date of Birth Table
-raw_data_dir = Path("/home/victoria/aki-forecaster/data/raw")
+raw_data_dir = Path("/home/victoria/aki-forecaster/data/raw_hadmid")
 print("Loading heights table...")
 heights = pd.read_csv(raw_data_dir / "heights.csv").rename(
     columns={"valueuom": "height_units"}
@@ -29,7 +29,7 @@ weights = pd.read_csv(raw_data_dir / "weights.csv").rename(
 print("Loading admissions table...")
 admissions = (
     pd.read_csv(raw_data_dir / "admissions.csv")
-    .drop_duplicates(subset="subject_id", keep="first", inplace=False)
+    .drop_duplicates(subset="hadm_id", keep="first", inplace=False)
     .reset_index(drop=True)
 )
 print("Finished loading data.")
@@ -73,7 +73,7 @@ def get_last_non_nan_value(series: pd.Series):
     return value
 
 
-def process_htwt(subj_id, grp_df):
+def process_htwt(hadm_id, grp_df):
     df = grp_df.sort_values(by="charttime")
     return df.apply(get_last_non_nan_value, axis=0).to_dict()
 
@@ -82,7 +82,7 @@ def process_htwt(subj_id, grp_df):
 htwt = heights.append(weights)
 
 # Get only columns we need
-htwt = htwt.loc[:, ["subject_id", "charttime", "weight", "height", "height_units"]]
+htwt = htwt.loc[:, ["hadm_id", "charttime", "weight", "height", "height_units"]]
 # Converts height based on units
 htwt.height = htwt.apply(normalize_value, axis=1)
 # Gets rid of invalid height values
@@ -92,8 +92,8 @@ htwt.height = htwt.height.apply(remove_invalid_height)
 # Use Concurrent pkg to parallelize featurization
 executor = ProcessPoolExecutor()
 jobs = [
-    executor.submit(process_htwt, subj_id, grp_df)
-    for subj_id, grp_df in htwt.groupby("subject_id")
+    executor.submit(process_htwt, hadm_id, grp_df)
+    for hadm_id, grp_df in htwt.groupby("hadm_id")
 ]
 
 results = []
@@ -102,12 +102,12 @@ for job in tqdm(as_completed(jobs), total=len(jobs)):
 
 
 height_weight = pd.DataFrame(results)
-height_weight = height_weight.loc[:, ["subject_id", "charttime", "weight", "height"]]
+height_weight = height_weight.loc[:, ["hadm_id", "charttime", "weight", "height"]]
 # Uncomment to save
 # height_weight.to_csv(
-# Path(
-#     "/home/victoria/aki-forecaster/data/interim/patients_height_weight_processed.csv"
-# )
+#     Path(
+#         "/home/victoria/aki-forecaster/data/interim/hadmid_height_weight_processed.csv"
+#     )
 # )
 #%% [markdown]
 # Now we have cleaned demographics, which we will join with hospital admissions table
@@ -115,7 +115,7 @@ height_weight = height_weight.loc[:, ["subject_id", "charttime", "weight", "heig
 
 height_weight = pd.read_csv(
     Path(
-        "/home/victoria/aki-forecaster/data/interim/patients_height_weight_processed.csv"
+        "/home/victoria/aki-forecaster/data/interim/hadmid_height_weight_processed.csv"
     ),
     header=0,
     index_col=0,
@@ -125,10 +125,10 @@ height_weight = pd.read_csv(
 #%% Merge Admissions data & Convert Dates
 
 pt_info = pd.merge(
-    admissions.loc[:, ["subject_id", "admittime", "gender", "ethnicity", "dob"]],
+    admissions.loc[:, ["hadm_id", "admittime", "gender", "ethnicity", "dob"]],
     height_weight,
     how="left",
-    on=["subject_id"],
+    on=["hadm_id"],
 )
 
 
@@ -165,7 +165,7 @@ pt_info["age"] = pt_info.apply(
 
 #%% Save Merged & Processed Demographics & Hospital Admission Dataferame
 save_dir = Path("/home/victoria/aki-forecaster/data/processed")
-save_filename = save_dir / "patients_ht_wt_demographics.csv"
+save_filename = save_dir / "hadmid_ht_wt_demographics.csv"
 pt_info.to_csv(save_filename)
 print(f"Saved file: {save_filename}")
 

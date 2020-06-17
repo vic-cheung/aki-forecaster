@@ -46,10 +46,10 @@ def uniquify_label(row: pd.Series):
     return new_label
 
 
-# Generate Dataframe of Labs for each SubjectID
+# Generate Dataframe of Labs for each Hadm_id (hospital admissions)
 def pivot_labs_and_save(hadm_id, hadm_id_grp) -> pd.DataFrame:
-    "Pivotes Long Table of Lab IDs for each SubjectID to unique LabID per col, saves file."
-    # Pivot Labs for each Subject ID
+    "Pivotes Long Table of Lab IDs for each Hadm_id to unique LabID per col, saves file."
+    # Pivot Labs for each HADM ID
     pivoted = pd.pivot_table(
         hadm_id_grp,
         values="labevents_value",
@@ -57,7 +57,7 @@ def pivot_labs_and_save(hadm_id, hadm_id_grp) -> pd.DataFrame:
         columns="itemid",
         aggfunc=list,
     ).applymap(lambda x: x[0] if isinstance(x, list) else x)
-    # Not all Subjects have every lab.  Normalize cols in all subjects by adding np.nan columns
+    # Not all HADMs have every lab.  Normalize cols in all HADMs by adding np.nan columns
     cols_to_add = [col for col in lab_id_to_name.keys() if col not in pivoted.columns]
     for col in cols_to_add:
         pivoted[col] = np.nan
@@ -72,7 +72,7 @@ def pivot_labs_and_save(hadm_id, hadm_id_grp) -> pd.DataFrame:
 
 
 #%% [markdown]
-# Save Lab Files by Subject ID
+# Save Lab Files by HADM ID
 # %% Load Labs Table
 print("Loading labs table...")
 data_dir = Path("/home/victoria/aki-forecaster/data/raw_hadmid")

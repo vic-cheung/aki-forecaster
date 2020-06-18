@@ -2,25 +2,38 @@ SELECT
     le.subject_id,
     le.hadm_id,
     le.itemid,
-    -- le.charttime,
-    labitems.label, 
-    -- labitems.fluid,
-    -- labitems.category,
-    -- labitems.loinc_code,
-    le.value
-    -- le.valueuom,
+    le.charttime,
+    le.value,
+    le.valueuom,
     -- le.flag
+    li.label,
+    li.fluid,
+    li.category,
+    li.loinc_code
 FROM mimiciii.labevents as le
-INNER JOIN
-    (SELECT
-        li.itemid,
-        li.label,
-        li.fluid,
-        li.category,
-        li.loinc_code
-    FROM
-        mimiciii.d_labitems AS li
-    WHERE
+INNER JOIN mimiciii.d_labitems AS li
+    ON li.itemid = le.itemid
+WHERE
+    (
+        lower(li.fluid) = 'blood' AND
+        (
+            lower(li.label) LIKE '%alkaline%'
+            -- lower(li.label) LIKE '%asparate aminotransferase%'
+        )
+    )
+    OR
+    (
+        lower(li.fluid) = 'urine' AND 
+        (
+            lower(li.label) LIKE '%wbc%' AND
+            lower(li.label) NOT LIKE '%wbc clumps%'
+        )
+    )
+ORDER BY
+    le.subject_id ASC,
+    le.hadm_id ASC,
+    le.charttime ASC
+LIMIT 1000
         -- (lower(li.fluid) = 'blood' AND lower(li.label) LIKE '%potassium%') OR
         -- (lower(li.fluid) = 'blood' AND lower(li.label) LIKE '%sodium%') OR
         -- (lower(li.fluid) = 'blood' AND lower(li.label) LIKE '%chloride%') OR
@@ -37,7 +50,7 @@ INNER JOIN
         -- (lower(li.fluid) = 'blood' AND lower(li.label) LIKE '%platelet%') OR
         -- (lower(li.fluid) = 'blood' AND lower(li.label) LIKE '%mcv%') OR
         -- (lower(li.fluid) = 'blood' AND lower(li.label) LIKE '%alanine aminotransferase%') OR
-        (lower(li.fluid) = 'blood' AND lower(li.label) LIKE '%asparate aminotransferase%')
+        -- (lower(li.fluid) = 'blood' AND lower(li.label) LIKE '%asparate aminotransferase%')
         -- (lower(li.fluid) = 'blood' AND lower(li.label) LIKE '%bilirubin%') OR
         -- (lower(li.fluid) = 'blood' AND lower(li.label) LIKE 'alkaline phosphatase')OR
         -- (lower(li.fluid) = 'blood' AND lower(li.label) LIKE '%troponin%')OR
@@ -73,32 +86,32 @@ INNER JOIN
         -- (lower(li.fluid) = 'urine' AND lower(li.label) LIKE '%wbc%') OR
         -- (lower(li.fluid) = 'urine' AND lower(li.label) LIKE '%wbc casts%') OR
         -- (lower(li.fluid) = 'urine' AND lower(li.label) LIKE '%yeast%')
-    EXCEPT
-      SELECT
-        li.itemid,
-        li.label,
-        li.fluid,
-        li.category,
-        li.loinc_code
-    FROM
-        mimiciii.d_labitems AS li
-    WHERE
-        (lower(li.fluid) = 'urine' AND lower(li.label) LIKE '%wbc clumps%') OR
-        (lower(li.fluid) = 'urine' AND lower(li.label) LIKE '%rbc clumps%') OR
-        (lower(li.fluid) = 'urine' AND lower(li.label) LIKE '%24 hr%') OR
-        (lower(li.fluid) = 'urine' AND lower(li.label) LIKE '%porphobilinogen screen%')  OR
-        (lower(li.fluid) = 'urine' AND lower(li.label) LIKE '%crystals%')  OR
-        (lower(li.fluid) = 'urine' AND lower(li.label) LIKE '%prot. electrophoresis%')  OR
-        (lower(li.fluid) = 'urine' AND lower(li.label) LIKE '%eosinophils%')  OR
-        (lower(li.fluid) = 'urine' AND lower(li.label) LIKE '%amorphous%')  OR
-        (lower(li.fluid) = 'urine' AND lower(li.label) LIKE '%amphetamine%')  OR
-        (lower(li.fluid) = 'urine' AND lower(li.label) LIKE '%hyphenated%')  OR
-        (lower(li.fluid) = 'urine' AND lower(li.label) LIKE '%total protein%')  OR
-        (lower(li.fluid) = 'urine' AND lower(li.label) LIKE '%phosphate%')
-    ) AS labitems
-    ON 
-    labitems.itemid = le.itemid
+    -- EXCEPT
+    --   SELECT
+    --     li.itemid,
+    --     li.label,
+    --     li.fluid,
+    --     li.category,
+    --     li.loinc_code
+    -- FROM
+    --     mimiciii.d_labitems AS li
+    -- WHERE
+    --     (lower(li.fluid) = 'urine' AND lower(li.label) LIKE '%wbc clumps%') OR
+    --     (lower(li.fluid) = 'urine' AND lower(li.label) LIKE '%rbc clumps%') OR
+    --     (lower(li.fluid) = 'urine' AND lower(li.label) LIKE '%24 hr%') OR
+    --     (lower(li.fluid) = 'urine' AND lower(li.label) LIKE '%porphobilinogen screen%')  OR
+    --     (lower(li.fluid) = 'urine' AND lower(li.label) LIKE '%crystals%')  OR
+    --     (lower(li.fluid) = 'urine' AND lower(li.label) LIKE '%prot. electrophoresis%')  OR
+    --     (lower(li.fluid) = 'urine' AND lower(li.label) LIKE '%eosinophils%')  OR
+    --     (lower(li.fluid) = 'urine' AND lower(li.label) LIKE '%amorphous%')  OR
+    --     (lower(li.fluid) = 'urine' AND lower(li.label) LIKE '%amphetamine%')  OR
+    --     (lower(li.fluid) = 'urine' AND lower(li.label) LIKE '%hyphenated%')  OR
+    --     (lower(li.fluid) = 'urine' AND lower(li.label) LIKE '%total protein%')  OR
+    --     (lower(li.fluid) = 'urine' AND lower(li.label) LIKE '%phosphate%')
+    -- ) AS labitems
+    -- ON 
+    -- labitems.itemid = le.itemid
 -- ORDER BY
 --     le.subject_id,
 --     le.charttime
-LIMIT 1000 --comment this out for the whole table length
+-- LIMIT 1000 --comment this out for the whole table length

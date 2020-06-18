@@ -3,15 +3,12 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 
-pd.set_option("display.max_columns", None)
-pd.set_option("display.max_rows", None)
-
 #%%
-subj_id_labs = Path("/home/victoria/aki-forecaster/data/interim/subj_id_labs")
-csv_files = [file for file in subj_id_labs.iterdir()]
-csv_file = csv_files[1]
-pt_data = pd.read_csv(csv_file, header=0, index_col=0)
-res = pt_data.loc[:, ~pt_data.columns.str.contains(pat="_cat")]
+# subj_id_labs = Path("/home/victoria/aki-forecaster/data/interim/subj_id_labs")
+# csv_files = [file for file in subj_id_labs.iterdir()]
+# csv_file = csv_files[1]
+# pt_data = pd.read_csv(csv_file, header=0, index_col=0)
+# res = pt_data.loc[:, ~pt_data.columns.str.contains(pat="_cat")]
 #%%
 # pt_data = pt_data.fillna("None")
 #%%
@@ -32,10 +29,6 @@ res = pt_data.loc[:, ~pt_data.columns.str.contains(pat="_cat")]
 
 
 # res = categorical_to_one_hot(series)
-
-#%%
-
-#%%
 
 
 def create_samples(data: pd.DataFrame, window: int = 3):
@@ -132,15 +125,14 @@ def featurize(csv_file):
     pt = int(csv_file.name.split(".")[0])
     demographics = pd.read_csv(
         Path(
-            "/home/victoria/aki-forecaster/data/processed/patients_ht_wt_demographics.csv"
+            "/home/victoria/aki-forecaster/data/processed/hadmid_ht_wt_demographics.csv"
         ),
         header=0,
         index_col=0,
     )
-    pt_demographics = demographics[demographics["subject_id"] == pt].loc[
+    pt_demographics = demographics.loc[demographics["hadm_id"] == pt].loc[
         :, ["gender", "ethnicity", "weight", "height", "age"]
     ]
-    demographics_dict = pt_demographics.to_dict("records")[0]
     # Only create training example if patient has Creatinine Value (corresponding to itemid: 50912)
     if "Creatinine[B-C]" in pt_data.columns:
         # Try to Preprocess Data
@@ -150,12 +142,14 @@ def featurize(csv_file):
             y = featurize_Y(Y_raw)
             for col in pt_demographics.columns:
                 x[col] = np.nan
-            x = x.fillna(demographics_dict)
-            return x, y
+                if not pt_demographics.empty:
+                    demographics_dict = pt_demographics.to_dict("records")[0]
+                    x = x.fillna(demographics_dict)
             if x.empty or y.empty:
                 return None
             else:
-                return {"x": x, "y": y}
+                # return {"x": x, "y": y}
+                return (x, y)
         # If Error occurs, skip patient
         except Exception as e:
             print(f"Error occurred in file: {csv_file}.  Error: {e}")

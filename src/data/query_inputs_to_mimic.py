@@ -1,12 +1,16 @@
 from textwrap import dedent
 
 
-def build_query_lab_events(
-    blood_labels_list: list = None, urine_labels_list: list = None, limit: int = None
-) -> str:
+def build_query_labs(
+    blood_labels: list = None,
+    blood_except: list = None,
+    urine_labels: list = None,
+    urine_except: list = None,
+    limit: int = None,
+) -> (str, str):
     blood_labels = (
-        blood_labels_list
-        if blood_labels_list
+        blood_labels
+        if blood_labels
         else [
             "potassium",
             "sodium",
@@ -36,10 +40,10 @@ def build_query_lab_events(
             "neutrophil",
         ]
     )
-    blood_str = " OR\n".join([f"lower(li.label) LIKE '%{x}%'" for x in blood_labels])
+    blood_except = blood_except if blood_except else ["zzzzzzzz"]
     urine_labels = (
-        urine_labels_list
-        if urine_labels_list
+        urine_labels
+        if urine_labels
         else [
             "yeast",
             "urine appearance",
@@ -71,23 +75,54 @@ def build_query_lab_events(
             "sodium, urine",
         ]
     )
+    urine_except = (
+        urine_except
+        if urine_except
+        else [
+            "wbc clumps",
+            "rbc clumps",
+            "24 hr",
+            "porphobilinogen screen",
+            "crystals",
+            "prot. electrophoresis",
+            "eosinophils",
+            "amorphous",
+            "amphetamine",
+            "hyphenated",
+            "total protein",
+            "phosphate",
+        ]
+    )
+
+    sql_lab_events = build_query_lab_events(
+        blood_labels=blood_labels,
+        blood_except=blood_except,
+        urine_labels=urine_labels,
+        urine_except=urine_except,
+    )
+    sql_lab_items = build_query_lab_items_id(
+        blood_labels=blood_labels,
+        blood_except=blood_except,
+        urine_labels=urine_labels,
+        urine_except=urine_except,
+    )
+    return (sql_lab_events, sql_lab_items)
+
+
+def build_query_lab_events(
+    blood_labels: list = None,
+    blood_except: list = None,
+    urine_labels: list = None,
+    urine_except: list = None,
+    limit: int = None,
+) -> str:
+    blood_str = " OR\n".join([f"lower(li.label) LIKE '%{x}%'" for x in blood_labels])
+    blood_except_str = " AND\n".join(
+        [f"lower(li.label) NOT LIKE '%{x}%'" for x in blood_except]
+    )
     urine_str = " OR\n".join([f"lower(li.label) LIKE '%{x}%'" for x in urine_labels])
-    urine_labels_except = [
-        "wbc clumps",
-        "rbc clumps",
-        "24 hr",
-        "porphobilinogen screen",
-        "crystals",
-        "prot. electrophoresis",
-        "eosinophils",
-        "amorphous",
-        "amphetamine",
-        "hyphenated",
-        "total protein",
-        "phosphate",
-    ]
     urine_except_str = " AND\n".join(
-        [f"lower(li.label) NOT LIKE '%{x}%'" for x in urine_labels_except]
+        [f"lower(li.label) NOT LIKE '%{x}%'" for x in urine_except]
     )
     sql = f"""
         SELECT
@@ -100,18 +135,20 @@ def build_query_lab_events(
             -- le.flag
             li.label,
             li.fluid,
-            li.category,
-            li.loinc_code
+            li.category
+            -- li.loinc_code
         FROM mimiciii.labevents as le
         INNER JOIN mimiciii.d_labitems AS li
             ON li.itemid = le.itemid
         WHERE
             (
-                lower(li.fluid) = 'blood' AND ({blood_str})
+                lower(li.fluid) = 'blood' AND (
+                    ({blood_str}) AND ({blood_except_str})
+                )
             )
             OR
             (
-                lower(li.fluid) = 'urine' AND 
+                lower(li.fluid) = 'urine' AND
                 (
                     ({urine_str}) AND ({urine_except_str})
                 )
@@ -123,87 +160,24 @@ def build_query_lab_events(
     """
     if limit:
         sql += f"\nLIMIT {limit}"
+
     return dedent(sql)
 
 
 def build_query_lab_items_id(
-    blood_lab_labels_list: list = None, urine_lab_labels_list: list = None
+    blood_labels: list = None,
+    blood_except: list = None,
+    urine_labels: list = None,
+    urine_except: list = None,
 ) -> str:
-    blood_lab_labels = (
-        blood_lab_labels_list
-        if blood_lab_labels_list
-        else [
-            "potassium",
-            "sodium",
-            "chloride",
-            "bicarbonate",
-            "creatinine",
-            "glucose",
-            "phosphate",
-            "a1c",
-            "white blood cells",
-            "red blood cells",
-            "hemoglobin",
-            "hematocrit",
-            "platelet",
-            "mcv",
-            "alanine aminotransferase",
-            "aspartate aminotransferase",
-            "bilirubin",
-            "alkaline, phosphatase",
-            "troponin",
-            "bnp",
-            "c-reactive protein",
-            "sedimentation",
-            "neutrophil",
-        ]
+    blood_str = " OR\n".join([f"lower(li.label) LIKE '%{x}%'" for x in blood_labels])
+    blood_except_str = " AND\n".join(
+        [f"lower(li.label) NOT LIKE '%{x}%'" for x in blood_except]
     )
-
-    urine_lab_labels = (
-        urine_lab_labels_list
-        if urine_lab_labels_list
-        else [
-            "yeast",
-            "urine appearance",
-            "urine creatinine",
-            "ketone",
-            "urine volume",
-            "osmolality, urine",
-            "bacteria",
-            "protein/creatinine ratio",
-            "nitrite",
-            "rbc",
-            "cellular cast",
-            "wbc casts",
-            "leukocytes",
-            "albumin, urine",
-            "specific gravity",
-            "rbc casts",
-            "ph",
-            "protein",
-            "hyaline casts",
-            "albumin/creatinine, urine",
-            "broad casts",
-            "urine casts, other",
-            "wbc",
-            "blood",
-            "granular casts",
-            "urine volume, total",
-            "urine color",
-            "sodium, urine",
-        ]
+    urine_str = " OR\n".join([f"lower(li.label) LIKE '%{x}%'" for x in urine_labels])
+    urine_except_str = " AND\n".join(
+        [f"lower(li.label) NOT LIKE '%{x}%'" for x in urine_except]
     )
-
-    blood_lab_labels_str = [
-        f"(lower(li.fluid) = 'blood' AND lower(li.label) LIKE '%{x}%')"
-        for x in blood_lab_labels
-    ]
-    blood_lab_labels_where = " OR\n".join(blood_lab_labels_str)
-    urine_lab_labels_str = [
-        f"(lower(li.fluid) = 'urine' AND lower(li.label) LIKE '%{x}%')"
-        for x in urine_lab_labels
-    ]
-    urine_lab_labels_where = " OR\n".join(urine_lab_labels_str)
 
     sql = f"""
     SELECT
@@ -215,30 +189,18 @@ def build_query_lab_items_id(
     FROM
         mimiciii.d_labitems AS li
     WHERE
-        {blood_lab_labels_where} OR
-        {urine_lab_labels_where}
-    EXCEPT
-    SELECT
-        li.itemid,
-        li.label,
-        li.fluid,
-        li.category,
-        li.loinc_code
-    FROM
-        mimiciii.d_labitems AS li
-    WHERE
-        (lower(li.fluid) = 'urine' AND lower(li.label) LIKE '%wbc clumps%') OR
-        (lower(li.fluid) = 'urine' AND lower(li.label) LIKE '%rbc clumps%') OR
-        (lower(li.fluid) = 'urine' AND lower(li.label) LIKE '%24 hr%') OR
-        (lower(li.fluid) = 'urine' AND lower(li.label) LIKE '%porphobilinogen screen%')  OR
-        (lower(li.fluid) = 'urine' AND lower(li.label) LIKE '%crystals%')  OR
-        (lower(li.fluid) = 'urine' AND lower(li.label) LIKE '%prot. electrophoresis%')  OR
-        (lower(li.fluid) = 'urine' AND lower(li.label) LIKE '%eosinophils%')  OR
-        (lower(li.fluid) = 'urine' AND lower(li.label) LIKE '%amorphous%')  OR
-        (lower(li.fluid) = 'urine' AND lower(li.label) LIKE '%amphetamine%')  OR
-        (lower(li.fluid) = 'urine' AND lower(li.label) LIKE '%hyphenated%')  OR
-        (lower(li.fluid) = 'urine' AND lower(li.label) LIKE '%total protein%')  OR
-        (lower(li.fluid) = 'urine' AND lower(li.label) LIKE '%phosphate%')
+        (
+            lower(li.fluid) = 'blood' AND (
+                ({blood_str}) AND ({blood_except_str})
+            )
+        )
+        OR
+        (
+            lower(li.fluid) = 'urine' AND
+            (
+                ({urine_str}) AND ({urine_except_str})
+            )
+        )
     """
     return dedent(sql)
 

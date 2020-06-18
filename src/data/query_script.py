@@ -18,7 +18,7 @@ def run_query_and_save(sql: str, filename: str = None):
     print("Starting query...")
     df = run_query(sql)
     if filename:
-        data_dir = Path("/home/victoria/aki-forecaster/data/raw_hadmid")
+        data_dir = Path("/home/victoria/aki-forecaster/data/raw")
         filename = data_dir / filename
         df.to_csv(Path(filename))
         print(f"Saved file: {filename}")

@@ -48,14 +48,10 @@ def uniquify_label(row: pd.Series):
 
 # Generate Dataframe of Labs for each Hadm_id (hospital admissions)
 def pivot_labs_and_save(hadm_id, hadm_id_grp) -> pd.DataFrame:
-    "Pivotes Long Table of Lab IDs for each Hadm_id to unique LabID per col, saves file."
+    "Pivots Long Table of Lab IDs for each Hadm_id to unique LabID per col, saves file."
     # Pivot Labs for each HADM ID
     pivoted = pd.pivot_table(
-        hadm_id_grp,
-        values="labevents_value",
-        index="charttime",
-        columns="itemid",
-        aggfunc=list,
+        hadm_id_grp, values="value", index="charttime", columns="itemid", aggfunc=list,
     ).applymap(lambda x: x[0] if isinstance(x, list) else x)
     # Not all HADMs have every lab.  Normalize cols in all HADMs by adding np.nan columns
     cols_to_add = [col for col in lab_id_to_name.keys() if col not in pivoted.columns]
@@ -66,7 +62,7 @@ def pivot_labs_and_save(hadm_id, hadm_id_grp) -> pd.DataFrame:
 
     # Save File
     data_dir = Path("/home/victoria/aki-forecaster/data/interim")
-    save_filename = data_dir / "hadm_id_labs" / f"{hadm_id}.csv"
+    save_filename = data_dir / "hadm_id_labs" / f"{int(hadm_id)}.csv"
     pivoted.to_csv(save_filename)
     # print(f"Saved file: {save_filename}")
 
@@ -75,10 +71,8 @@ def pivot_labs_and_save(hadm_id, hadm_id_grp) -> pd.DataFrame:
 # Save Lab Files by HADM ID
 # %% Load Labs Table
 print("Loading labs table...")
-data_dir = Path("/home/victoria/aki-forecaster/data/raw_hadmid")
-lab_table = pd.read_csv(data_dir / "lab_events.csv").rename(
-    columns={"labevents_itemid": "itemid"}
-)
+data_dir = Path("/home/victoria/aki-forecaster/data/raw")
+lab_table = pd.read_csv(data_dir / "lab_events.csv")
 print("Loaded")
 
 #%% Load Lab Items ID Table
@@ -104,7 +98,7 @@ lab_ids.to_csv(data_dir / "lab_items_id_with_names.csv")
 # Create Dict mapping lab IDs to names
 lab_id_to_name = {k: v for k, v in lab_ids.loc[:, ["itemid", "name"]].values}
 
-
+# %%
 # Use Concurrent To Save Files in Parallel
 executor = ProcessPoolExecutor()
 jobs = [

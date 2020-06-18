@@ -137,7 +137,6 @@ X_test: {X_test.shape}
 Y_test: {Y_test.shape}
 """
 )
- 4
 # Save Train Data
 processed_dir = Path(
     "/home/victoria/aki-forecaster/data/processed/continuous_vars_only"
@@ -162,8 +161,17 @@ print("Train/Validate/Test sets saved")
 #     "colsample_bytree": [0.3, 0.5, 1.0],
 # }
 
+# params = {
+#     "learning_rate": [0.01, 0.1],
+#     "max_depth": [3, 6],
+#     "reg_lambda": [0.3, 1],
+#     "n_estimators": [10000, 30000, 50000],
+#     "subsample": [0.8],
+#     "colsample_bytree": [0.8, 1.0],
+# }
+
 params = {
-    "learning_rate": [0.01, 0.1],
+    "learning_rate": [0.1],
     "max_depth": [3, 6],
     "reg_lambda": [0.3, 1],
     "n_estimators": [10000, 30000, 50000],

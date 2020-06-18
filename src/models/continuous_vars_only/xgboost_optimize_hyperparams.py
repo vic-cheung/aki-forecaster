@@ -35,7 +35,7 @@ def create_regressors(params: dict) -> xgb.XGBRegressor:
         subsample=params.subsample,
         colsample_bytree=params.colsample_bytree,
         random_state=123,
-        missing=-999,
+        # missing=-999,
     )
     return model
 
@@ -53,7 +53,9 @@ def train_model(model: xgb.XGBRegressor):
 
 def train_model_and_save(
     model: xgb.XGBRegressor,
-    save_folder=Path("/home/victoria/aki-forecaster/src/models/continuous_vars_only"),
+    save_folder=Path(
+        "/home/victoria/aki-forecaster/models/prelim/hadm_id_hyperparam_opt1"
+    ),
 ):
     result = train_model(model)
     # Get params for filename
@@ -74,12 +76,16 @@ def train_model_and_save(
 
 # %% load data
 X = pd.read_csv(
-    Path("/home/victoria/aki-forecaster/data/processed/continuous_vars_only/X.csv"),
+    Path(
+        "/home/victoria/aki-forecaster/data/processed/continuous_vars_only/hadm_id/X.csv"
+    ),
     header=0,
     index_col=0,
-).iloc[:, :69]
+)
 Y = pd.read_csv(
-    Path("/home/victoria/aki-forecaster/data/processed/continuous_vars_only/Y.csv"),
+    Path(
+        "/home/victoria/aki-forecaster/data/processed/continuous_vars_only/hadm_id/Y.csv"
+    ),
     header=0,
     index_col=0,
 )
@@ -91,14 +97,24 @@ X.ethnicity = X.ethnicity.map(ethnicity_id_inverse)
 
 gender_dict = {"M": 0, "F": 1}
 X.gender = X.gender.map(gender_dict)
-# %% fill NaNs with -999 nonsensical value for XGBoost
-X_filled = X.fillna(-999)
-Y_filled = Y.fillna(-999)
+# %% fill NaNs with median value for XGBoost
+
+
+# def median_value(series: pd.Series):
+#     s = series.dropna()
+#     return s.median()
+
+
+# X.apply(median_value, axis=0)
+
+#%%
+X_filled = X.fillna(X.median(axis=0))
+Y_filled = Y.fillna(Y.median())
 # %% split training and test data
 X_train, X_test, Y_train, Y_test = train_test_split(
     X_filled.reset_index(drop=True),
     Y_filled.reset_index(drop=True),
-    test_size=0.4,
+    test_size=0.2,
     random_state=123,
 )
 X_test, X_valid, Y_test, Y_valid = train_test_split(
@@ -121,7 +137,7 @@ X_test: {X_test.shape}
 Y_test: {Y_test.shape}
 """
 )
-
+ 4
 # Save Train Data
 processed_dir = Path(
     "/home/victoria/aki-forecaster/data/processed/continuous_vars_only"
@@ -147,12 +163,12 @@ print("Train/Validate/Test sets saved")
 # }
 
 params = {
-    "learning_rate": [0.1],
-    "max_depth": [5],
-    "reg_lambda": [0.3],
-    "n_estimators": [30000, 50000, 100000],
-    "subsample": [0.5],
-    "colsample_bytree": [1.0],
+    "learning_rate": [0.01, 0.1],
+    "max_depth": [3, 6],
+    "reg_lambda": [0.3, 1],
+    "n_estimators": [10000, 30000, 50000],
+    "subsample": [0.8],
+    "colsample_bytree": [0.8, 1.0],
 }
 # Create all models (total # is unique combination of all parameters)
 models = [create_regressors(x) for x in named_product(**params)]

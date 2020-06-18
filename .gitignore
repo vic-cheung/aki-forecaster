@@ -2,6 +2,9 @@
 .vscode/*
 aki-forecaster.code-workspace
 
+# Exclude Prelim Models
+models/prelim/*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

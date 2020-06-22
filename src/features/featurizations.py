@@ -31,7 +31,7 @@ from pathlib import Path
 # res = categorical_to_one_hot(series)
 
 
-def create_samples(data: pd.DataFrame, window: int = 3):
+def create_samples(data: pd.DataFrame, window: int = 1):
     """Transforms raw labs data for 1 patient into multiple samples
     by sliding a window across time to define `X` and `Y`.
 

@@ -45,7 +45,8 @@ Project Organization
     │   └── visualization  <- Scripts to create exploratory and results oriented visualizations
     │
     │
-    ├── spec-file.txt      <- Create an identical virtual environment. `conda install --name myenv --file spec-file.txt`
+    ├── spec-file.txt      <- Create an identical virtual environment. 
+                              `conda install --name myenv --file spec-file.txt`
     
     
     

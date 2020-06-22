@@ -1,6 +1,9 @@
 aki-forecaster
-==============================
-
+==================================
+AUTHOR: VICTORIA CHEUNG
+email: victoriakcheung@gmail.com
+date: 2020-0622
+==================================
 predicting AKI using the MIMIC-III database
 
 Project Organization
@@ -15,7 +18,6 @@ Project Organization
     │   ├── processed      <- The final, canonical data sets for modeling.
     │   └── raw            <- The original, immutable data dump.
     │
-    ├── docs               <- A default Sphinx project; see sphinx-doc.org for details
     │
     ├── models             <- Trained and serialized models, model predictions, or model summaries
     │

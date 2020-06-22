@@ -4,7 +4,8 @@ aki-forecaster
 
 #### email: victoriakcheung@gmail.com
 
-#### date: 2020-0622
+#### start date: 2020-0601
+#### end date: in progress
 
 
 predicting AKI using the MIMIC-III database

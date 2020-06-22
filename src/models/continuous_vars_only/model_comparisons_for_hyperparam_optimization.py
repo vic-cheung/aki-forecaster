@@ -132,7 +132,7 @@ def altair_plot(error_metric: pd.DataFrame):
     num = error_metric.shape[0]
     idx = np.linspace(0, num - 1, 5000).astype(int)
     subset = error_metric.iloc[idx]
-    plots = plot_metrics(subset)
+    plots = plot_metrics(subset, x_title="number of estimators")
     return plots
 
 
@@ -177,110 +177,177 @@ def get_model_params(model: xgb.XGBRegressor) -> dict:
 
 
 # %% load data
-model_dir = Path("/home/victoria/aki-forecaster/models/prelim/hadm_id_hyperparam_opt1")
+model_dir = Path("/home/victoria/aki-forecaster/models/prelim/hadm_id_hyperparam_opt2")
 pickles = [file for file in model_dir.iterdir()]
 filenames = list(map(lambda x: x.name, pickles))
 metrics = get_metrics(pickles)
 
-# %%
-p1 = altair_plot(metrics.error[0])  # 15,000 val gets worse
-p2 = altair_plot(metrics.error[1])  # 2000 val gets worse
-p3 = altair_plot(metrics.error[2])  # 500 *
-p4 = altair_plot(metrics.error[3])  # 100 *
-p5 = altair_plot(metrics.error[4])  # 600
-p6 = altair_plot(metrics.error[5])  # 500
-p7 = altair_plot(metrics.error[6])  # models are about the same. 1000
-p8 = altair_plot(metrics.error[7])  # 150
-p9 = altair_plot(metrics.error[8])  # 500 *
-p10 = altair_plot(metrics.error[9])  # 500 *
-p11 = altair_plot(metrics.error[10])  # 500
-p12 = altair_plot(metrics.error[11])  # 500 *
-p13 = altair_plot(metrics.error[12])  # 500 *
-p14 = altair_plot(metrics.error[13])  # 1000
-p15 = altair_plot(metrics.error[14])  # 1000 *
-p16 = altair_plot(metrics.error[15])  # 1000 *
-p17 = altair_plot(metrics.error[16])  # 600 *
-p18 = altair_plot(metrics.error[17])  # 1500 *
-p19 = altair_plot(metrics.error[18])  # 1000
-p20 = altair_plot(metrics.error[19])  # 500 *
-p21 = altair_plot(metrics.error[20])  # 2000
-p22 = altair_plot(metrics.error[21])  # 500 *
-p23 = altair_plot(metrics.error[22])  # 300 *
-p24 = altair_plot(metrics.error[23])  # 1500
-p25 = altair_plot(metrics.error[24])  # 1500
-p26 = altair_plot(metrics.error[25])  # 500 *
-p27 = altair_plot(metrics.error[26])  # 2500
-# p28 = altair_plot(metrics.error[27])
-# p29 = altair_plot(metrics.error[28])
-# p30 = altair_plot(metrics.error[29])
-# p31 = altair_plot(metrics.error[30])
-# p32 = altair_plot(metrics.error[31])
-# p33 = altair_plot(metrics.error[32])
-# p34 = altair_plot(metrics.error[33])
-# p35 = altair_plot(metrics.error[34])
+# %% these were for hyperparam_opt1
+# p1 = altair_plot(metrics.error[0])  # 15,000 val gets worse
+# p2 = altair_plot(metrics.error[1])  # 2000 val gets worse
+# p3 = altair_plot(metrics.error[2])  # 500 *
+# p4 = altair_plot(metrics.error[3])  # 100 *
+# p5 = altair_plot(metrics.error[4])  # 600
+# p6 = altair_plot(metrics.error[5])  # 500
+# p7 = altair_plot(metrics.error[6])  # models are about the same. 1000
+# p8 = altair_plot(metrics.error[7])  # 150
+# p9 = altair_plot(metrics.error[8])  # 500 *
+# p10 = altair_plot(metrics.error[9])  # 500 *
+# p11 = altair_plot(metrics.error[10])  # 500
+# p12 = altair_plot(metrics.error[11])  # 500 *
+# p13 = altair_plot(metrics.error[12])  # 500 *
+# p14 = altair_plot(metrics.error[13])  # 1000
+# p15 = altair_plot(metrics.error[14])  # 1000 *
+# p16 = altair_plot(metrics.error[15])  # 1000 *
+# p17 = altair_plot(metrics.error[16])  # 600 *
+# p18 = altair_plot(metrics.error[17])  # 1500 *
+# p19 = altair_plot(metrics.error[18])  # 1000
+# p20 = altair_plot(metrics.error[19])  # 500 *
+# p21 = altair_plot(metrics.error[20])  # 2000
+# p22 = altair_plot(metrics.error[21])  # 500 *
+# p23 = altair_plot(metrics.error[22])  # 300 *
+# p24 = altair_plot(metrics.error[23])  # 1500
+# p25 = altair_plot(metrics.error[24])  # 1500
+# p26 = altair_plot(metrics.error[25])  # 500 *
+# p27 = altair_plot(metrics.error[26])  # 2500
+
+
+# comparison = pd.concat(
+#     [
+#         metrics.error[0].iloc[15000],
+#         metrics.error[1].iloc[2000],
+#         metrics.error[2].iloc[500],
+#         metrics.error[3].iloc[100],
+#         metrics.error[4].iloc[600],
+#         metrics.error[5].iloc[500],
+#         metrics.error[6].iloc[1000],
+#         metrics.error[7].iloc[150],
+#         metrics.error[8].iloc[500],
+#         metrics.error[9].iloc[500],
+#         metrics.error[10].iloc[500],
+#         metrics.error[11].iloc[500],
+#         metrics.error[12].iloc[500],
+#         metrics.error[13].iloc[1000],
+#         metrics.error[14].iloc[1000],
+#         metrics.error[15].iloc[1000],
+#         metrics.error[16].iloc[600],
+#         metrics.error[17].iloc[1500],
+#         metrics.error[18].iloc[1000],
+#         metrics.error[19].iloc[500],
+#         metrics.error[20].iloc[2000],
+#         metrics.error[21].iloc[500],
+#         metrics.error[22].iloc[300],
+#         metrics.error[23].iloc[1500],
+#         metrics.error[24].iloc[1500],
+#         metrics.error[25].iloc[500],
+#         metrics.error[26].iloc[2500],
+#     ],
+#     axis=1,
+#     ignore_index=True,
+# )
+
+# model2 = unpickle(pickles, idx=1)
+# model19 = unpickle(pickles, idx=18)
+
+p1 = altair_plot(metrics.error[0])
+p2 = altair_plot(metrics.error[1])
+p3 = altair_plot(metrics.error[2])
+p4 = altair_plot(metrics.error[3])
+p5 = altair_plot(metrics.error[4])
+p6 = altair_plot(metrics.error[5])
+p7 = altair_plot(metrics.error[6])
+p8 = altair_plot(metrics.error[7])
 
 comparison = pd.concat(
     [
-        metrics.error[0].iloc[15000],
-        metrics.error[1].iloc[2000],
-        metrics.error[2].iloc[500],
-        metrics.error[3].iloc[100],
-        metrics.error[4].iloc[600],
-        metrics.error[5].iloc[500],
-        metrics.error[6].iloc[1000],
-        metrics.error[7].iloc[150],
-        metrics.error[8].iloc[500],
-        metrics.error[9].iloc[500],
-        metrics.error[10].iloc[500],
-        metrics.error[11].iloc[500],
-        metrics.error[12].iloc[500],
-        metrics.error[13].iloc[1000],
-        metrics.error[14].iloc[1000],
-        metrics.error[15].iloc[1000],
-        metrics.error[16].iloc[600],
-        metrics.error[17].iloc[1500],
-        metrics.error[18].iloc[1000],
-        metrics.error[19].iloc[500],
-        metrics.error[20].iloc[2000],
-        metrics.error[21].iloc[500],
-        metrics.error[22].iloc[300],
-        metrics.error[23].iloc[1500],
-        metrics.error[24].iloc[1500],
-        metrics.error[25].iloc[500],
-        metrics.error[26].iloc[2500],
+        metrics.error[0].iloc[-1],
+        metrics.error[1].iloc[-1],
+        metrics.error[2].iloc[-1],
+        metrics.error[3].iloc[-1],
+        metrics.error[4].iloc[-1],
+        metrics.error[5].iloc[-1],
+        metrics.error[6].iloc[-1],
+        metrics.error[7].iloc[-1],
     ],
     axis=1,
     ignore_index=True,
 )
 
-model2 = unpickle(pickles, idx=1)
-model19 = unpickle(pickles, idx=18)
+comparison = pd.concat(
+    [metrics.error[2].iloc[800], metrics.error[4].iloc[3000],],
+    axis=1,
+    ignore_index=True,
+)
+
 
 data_dir = Path("/home/victoria/aki-forecaster/data/processed/continuous_vars_only")
 X_test = pd.read_csv(data_dir / "X_test.csv", header=0, index_col=0,)
 Y_test = pd.read_csv(data_dir / "Y_test.csv", header=0, index_col=0,).reset_index(
     drop=True
 )
+model1 = unpickle(pickles, idx=0)
+model2 = unpickle(pickles, idx=1)
+model3 = unpickle(pickles, idx=2)
+model4 = unpickle(pickles, idx=3)
+model5 = unpickle(pickles, idx=4)
+model6 = unpickle(pickles, idx=5)
+model7 = unpickle(pickles, idx=6)
+model8 = unpickle(pickles, idx=7)
 
+y1 = model1.predict(X_test.values)
+y1 = pd.DataFrame(y1).rename(columns={0: "model1"})
 y2 = model2.predict(X_test.values)
 y2 = pd.DataFrame(y2).rename(columns={0: "model2"})
-y19 = model19.predict(X_test.values)
-y19 = pd.DataFrame(y19).rename(columns={0: "model19"})
+y3 = model3.predict(X_test.values)
+y3 = pd.DataFrame(y3).rename(columns={0: "model3"})
+y4 = model4.predict(X_test.values)
+y4 = pd.DataFrame(y4).rename(columns={0: "model4"})
+y5 = model5.predict(X_test.values)
+y5 = pd.DataFrame(y5).rename(columns={0: "model5"})
+y6 = model6.predict(X_test.values)
+y6 = pd.DataFrame(y6).rename(columns={0: "model6"})
+y7 = model7.predict(X_test.values)
+y7 = pd.DataFrame(y7).rename(columns={0: "model7"})
+y8 = model8.predict(X_test.values)
+y8 = pd.DataFrame(y8).rename(columns={0: "model8"})
 
-chart_concat = pd.concat([Y_test, y2, y19], axis=1)
+save_dir = Path(
+    "/home/victoria/aki-forecaster/data/processed/continuous_vars_only/hadm_id"
+)
+y1.to_csv(Path(save_dir / "y1_pred.csv"))
+y2.to_csv(Path(save_dir / "y2_pred.csv"))
+y3.to_csv(Path(save_dir / "y3_pred.csv"))
+y4.to_csv(Path(save_dir / "y4_pred.csv"))
+y5.to_csv(Path(save_dir / "y5_pred.csv"))
+y6.to_csv(Path(save_dir / "y6_pred.csv"))
+y7.to_csv(Path(save_dir / "y7_pred.csv"))
+y8.to_csv(Path(save_dir / "y8_pred.csv"))
+
+chart_concat = pd.concat([Y_test, y1, y2, y3, y4, y5, y6, y7, y8], axis=1)
+# chart_concat = pd.concat([Y_test, y1, y2, y3, y4, y5,y6,y7], axis=1)
+
 plot_metrics(
     chart_concat,
-    features=["model2", "model19"],
+    features=[
+        "model1",
+        "model2",
+        "model3",
+        "model4",
+        "model5",
+        "model6",
+        "model7",
+        "model8",
+    ],
     x_title="True Creatinine Value from Test Set",
     x_inputs="Creatinine_avg",
     y_title="Predicited Creatinine Value",
     style="scatter",
 )
 
-chart_concat_2 = pd.concat([Y_test, y2], axis=1)
+chart_concat_2 = pd.concat([Y_test, y3], axis=1)
 plot_metrics(
-    chart_concat,
-    features=["model2"],
+    chart_concat_2,
+    features=["model3"],
     x_title="True Creatinine Value from Test Set",
     x_inputs="Creatinine_avg",
     y_title="Predicited Creatinine Value",
@@ -288,14 +355,46 @@ plot_metrics(
 )
 
 # %%
+model1_r2 = r2_score(Y_test, y1)
 model2_r2 = r2_score(Y_test, y2)
-model19_r2 = r2_score(Y_test, y19)
+model3_r2 = r2_score(Y_test, y3)
+model4_r2 = r2_score(Y_test, y4)
+model5_r2 = r2_score(Y_test, y5)
+model6_r2 = r2_score(Y_test, y6)
+model7_r2 = r2_score(Y_test, y7)
+model8_r2 = r2_score(Y_test, y8)
+hyperparams1 = get_model_params(model1)
+hyperparams2 = get_model_params(model2)
+hyperparams3 = get_model_params(model3)
+hyperparams4 = get_model_params(model4)
+hyperparams5 = get_model_params(model5)
+hyperparams6 = get_model_params(model6)
+hyperparams7 = get_model_params(model7)
+hyperparams8 = get_model_params(model8)
+
 print(
     f"""
+model1 r2 score: {model1_r2}
 model2 r2 score: {model2_r2}
-model19 r2 score: {model19_r2}
+model3 r2 score: {model3_r2}
+model4 r2 score: {model4_r2}
+model5 r2 score: {model5_r2}
+model6 r2 score: {model6_r2}
+model5 r2 score: {model7_r2}
+model6 r2 score: {model8_r2}
+
+
+hyperparams1: {hyperparams1}
+hyperparams2: {hyperparams2}
+hyperparams3: {hyperparams3}
+hyperparams4: {hyperparams4}
+hyperparams5: {hyperparams5}
+hyperparams6: {hyperparams6}
+hyperparams5: {hyperparams7}
+hyperparams6: {hyperparams8}
 """
 )
+# %%
 # metrics.error[27].iloc[15000]
 # metrics.error[28].iloc[15000]
 # %%

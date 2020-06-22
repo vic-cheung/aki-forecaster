@@ -54,7 +54,7 @@ def train_model(model: xgb.XGBRegressor):
 def train_model_and_save(
     model: xgb.XGBRegressor,
     save_folder=Path(
-        "/home/victoria/aki-forecaster/models/prelim/hadm_id_hyperparam_opt1"
+        "/home/victoria/aki-forecaster/models/prelim/hadm_id_hyperparam_opt3"
     ),
 ):
     result = train_model(model)
@@ -75,22 +75,19 @@ def train_model_and_save(
 
 
 # %% load data
-X = pd.read_csv(
-    Path(
-        "/home/victoria/aki-forecaster/data/processed/continuous_vars_only/hadm_id/X.csv"
-    ),
-    header=0,
-    index_col=0,
+data_dir = Path(
+    "/home/victoria/aki-forecaster/data/processed/continuous_vars_only/hadm_id_window1"
 )
-Y = pd.read_csv(
-    Path(
-        "/home/victoria/aki-forecaster/data/processed/continuous_vars_only/hadm_id/Y.csv"
-    ),
-    header=0,
-    index_col=0,
-)
+X = pd.read_csv(data_dir / "X.csv", header=0, index_col=0,)
+Y = pd.read_csv(data_dir / "Y.csv", header=0, index_col=0,)
 # %% integer encode ethnicity and gender
 ethnicity_id = dict(enumerate(X.ethnicity.unique().tolist()))
+pd.Series(ethnicity_id).to_csv(
+    Path(
+        "/home/victoria/aki-forecaster/data/processed/continuous_vars_only/hadm_id_window1"
+    )
+    / "ethnicity_id.csv"
+)
 # invert keys and values so categorical becomes a number, map it onto
 ethnicity_id_inverse = dict(zip(ethnicity_id.values(), ethnicity_id.keys()))
 X.ethnicity = X.ethnicity.map(ethnicity_id_inverse)
@@ -139,7 +136,7 @@ Y_test: {Y_test.shape}
 )
 # Save Train Data
 processed_dir = Path(
-    "/home/victoria/aki-forecaster/data/processed/continuous_vars_only"
+    "/home/victoria/aki-forecaster/data/processed/continuous_vars_only/hadm_id_window1"
 )
 X_train.to_csv(processed_dir / "X_train.csv")
 Y_train.to_csv(processed_dir / "Y_train.csv")
@@ -171,12 +168,12 @@ print("Train/Validate/Test sets saved")
 # }
 
 params = {
-    "learning_rate": [0.1],
-    "max_depth": [3, 6],
-    "reg_lambda": [0.3, 1],
-    "n_estimators": [10000, 30000, 50000],
+    "learning_rate": [0.01],
+    "max_depth": [12],
+    "reg_lambda": [1],
+    "n_estimators": [30000],
     "subsample": [0.8],
-    "colsample_bytree": [0.8, 1.0],
+    "colsample_bytree": [0.8],
 }
 # Create all models (total # is unique combination of all parameters)
 models = [create_regressors(x) for x in named_product(**params)]
@@ -186,6 +183,6 @@ trained_models = [train_model_and_save(x) for x in tqdm(models)]
 print("All models trained!")
 
 # %%
-kfold = StratifiedKFold(n_splits=10, random_state=7)
-results = cross_val_score(trained_models, X, Y, cv=kfold)
-print("Accuracy: %.2f%% (%.2f%%)" % (results.mean() * 100, results.std() * 100))
+# kfold = StratifiedKFold(n_splits=10, random_state=7)
+# results = cross_val_score(trained_models, X, Y, cv=kfold)
+# print("Accuracy: %.2f%% (%.2f%%)" % (results.mean() * 100, results.std() * 100))

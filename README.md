@@ -6,8 +6,9 @@ aki-forecaster
 #### end date: in progress
 
 
-predicting AKI using the MIMIC-III database @ https://mimic.physionet.org/gettingstarted/access/
+predicting AKI using the MIMIC-III database 
 ==================================
+@ https://mimic.physionet.org/gettingstarted/access/
 
 Project Organization
 ----------------------------------

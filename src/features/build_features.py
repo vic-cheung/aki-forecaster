@@ -37,7 +37,7 @@ Y = pd.concat(Y, axis=0)
 
 # %% Save Train Data
 processed_dir = Path(
-    "/home/victoria/aki-forecaster/data/processed/continuous_vars_only/hadm_id"
+    "/home/victoria/aki-forecaster/data/processed/continuous_vars_only/hadm_id_window1"
 )
 X.to_csv(processed_dir / "X.csv")
 Y.to_csv(processed_dir / "Y.csv")

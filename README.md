@@ -1,6 +1,6 @@
 aki-forecaster
 ==================================
-AUTHOR: VICTORIA CHEUNG
+AUTHOR: VICTORIA CHEUNG \n
 email: victoriakcheung@gmail.com
 date: 2020-0622
 ==================================

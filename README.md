@@ -6,8 +6,9 @@ email: victoriakcheung@gmail.com
 
 date: 2020-0622
 
-==================================
+
 predicting AKI using the MIMIC-III database
+==================================
 
 Project Organization
 ------------

@@ -1,6 +1,6 @@
-aki-forecaster
+# aki-forecaster
 ==================================
-AUTHOR: VICTORIA CHEUNG
+## AUTHOR: VICTORIA CHEUNG
 
 ### email: victoriakcheung@gmail.com
 

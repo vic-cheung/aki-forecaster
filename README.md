@@ -1,14 +1,12 @@
 aki-forecaster
 ==================================
 #### AUTHOR: VICTORIA CHEUNG
-
 #### email: victoriakcheung@gmail.com
-
 #### start date: 2020-0601
 #### end date: in progress
 
 
-predicting AKI using the MIMIC-III database
+predicting AKI using the MIMIC-III database @ https://mimic.physionet.org/gettingstarted/access/
 ==================================
 
 Project Organization

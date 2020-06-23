@@ -8,7 +8,8 @@ import itertools
 import collections
 import pickle
 from tqdm.autonotebook import tqdm
-from sklearn.model_selection import train_test_split, StratifiedKFold, cross_val_score
+
+# from sklearn.model_selection import train_test_split, StratifiedKFold, cross_val_score
 
 # from sklearn.linear_model import LogisticRegression, LinearRegression
 # from sklearn.metrics import explained_variance_score, mean_squared_error, r2_score
@@ -54,7 +55,7 @@ def train_model(model: xgb.XGBRegressor):
 def train_model_and_save(
     model: xgb.XGBRegressor,
     save_folder=Path(
-        "/home/victoria/aki-forecaster/models/prelim/hadm_id_hyperparam_opt3"
+        "/home/victoria/aki-forecaster/models/prelim/hadm_id_hyperparam_opt5"
     ),
 ):
     result = train_model(model)
@@ -76,7 +77,7 @@ def train_model_and_save(
 
 # %% load data
 data_dir = Path(
-    "/home/victoria/aki-forecaster/data/processed/continuous_vars_only/hadm_id_window1"
+    "/home/victoria/aki-forecaster/data/processed/continuous_vars_only/hadm_id_window1_02"
 )
 X = pd.read_csv(data_dir / "X.csv", header=0, index_col=0,)
 Y = pd.read_csv(data_dir / "Y.csv", header=0, index_col=0,)
@@ -84,7 +85,7 @@ Y = pd.read_csv(data_dir / "Y.csv", header=0, index_col=0,)
 ethnicity_id = dict(enumerate(X.ethnicity.unique().tolist()))
 pd.Series(ethnicity_id).to_csv(
     Path(
-        "/home/victoria/aki-forecaster/data/processed/continuous_vars_only/hadm_id_window1"
+        "/home/victoria/aki-forecaster/data/processed/continuous_vars_only/hadm_id_window1_02"
     )
     / "ethnicity_id.csv"
 )
@@ -107,19 +108,29 @@ X.gender = X.gender.map(gender_dict)
 #%%
 X_filled = X.fillna(X.median(axis=0))
 Y_filled = Y.fillna(Y.median())
+trainset = int(X_filled.shape[0] * 0.8)
+validset = int(X_filled.shape[0] * 0.9)
+
+X_train = X_filled.iloc[:trainset]
+X_valid = X_filled.iloc[trainset : validset + 1]
+X_test = X_filled.iloc[validset + 1 :]
+
+Y_train = Y_filled.iloc[:trainset]
+Y_valid = Y_filled.iloc[trainset : validset + 1]
+Y_test = Y_filled.iloc[validset + 1 :]
 # %% split training and test data
-X_train, X_test, Y_train, Y_test = train_test_split(
-    X_filled.reset_index(drop=True),
-    Y_filled.reset_index(drop=True),
-    test_size=0.2,
-    random_state=123,
-)
-X_test, X_valid, Y_test, Y_valid = train_test_split(
-    X_test, Y_test, test_size=0.5, random_state=123
-)
+# X_train, X_test, Y_train, Y_test = train_test_split(
+#     X_filled.reset_index(drop=True),
+#     Y_filled.reset_index(drop=True),
+#     test_size=0.2,
+#     random_state=123,
+# )
+# X_test, X_valid, Y_test, Y_valid = train_test_split(
+#     X_test, Y_test, test_size=0.5, random_state=123
+# )
 # join test set back to train set
-X_train = X_train.append(X_test)
-Y_train = Y_train.append(Y_test)
+# X_train = X_train.append(X_test)
+# Y_train = Y_train.append(Y_test)
 
 # sanity check dimensions of the sets
 print(
@@ -134,18 +145,18 @@ X_test: {X_test.shape}
 Y_test: {Y_test.shape}
 """
 )
-# Save Train Data
-processed_dir = Path(
-    "/home/victoria/aki-forecaster/data/processed/continuous_vars_only/hadm_id_window1"
-)
-X_train.to_csv(processed_dir / "X_train.csv")
-Y_train.to_csv(processed_dir / "Y_train.csv")
-X_valid.to_csv(processed_dir / "X_valid.csv")
-Y_valid.to_csv(processed_dir / "Y_valid.csv")
-X_test.to_csv(processed_dir / "X_test.csv")
-Y_test.to_csv(processed_dir / "Y_test.csv")
+# # Save Train Data
+# processed_dir = Path(
+#     "/home/victoria/aki-forecaster/data/processed/continuous_vars_only/hadm_id_window1_02"
+# )
+# X_train.to_csv(processed_dir / "X_train.csv")
+# Y_train.to_csv(processed_dir / "Y_train.csv")
+# X_valid.to_csv(processed_dir / "X_valid.csv")
+# Y_valid.to_csv(processed_dir / "Y_valid.csv")
+# X_test.to_csv(processed_dir / "X_test.csv")
+# Y_test.to_csv(processed_dir / "Y_test.csv")
 
-print("Train/Validate/Test sets saved")
+# print("Train/Validate/Test sets saved")
 
 #%%
 # Create Models with different Hyperparameters
@@ -169,11 +180,11 @@ print("Train/Validate/Test sets saved")
 
 params = {
     "learning_rate": [0.01],
-    "max_depth": [12],
+    "max_depth": [6],
     "reg_lambda": [1],
-    "n_estimators": [30000],
-    "subsample": [0.8],
-    "colsample_bytree": [0.8],
+    "n_estimators": [1000],
+    "subsample": [0.7],
+    "colsample_bytree": [1],
 }
 # Create all models (total # is unique combination of all parameters)
 models = [create_regressors(x) for x in named_product(**params)]

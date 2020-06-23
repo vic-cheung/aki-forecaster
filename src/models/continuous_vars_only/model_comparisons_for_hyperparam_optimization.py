@@ -15,6 +15,7 @@ pd.set_option("display.max_columns", None)
 pd.set_option("display.max_rows", None)
 alt.data_transformers.disable_max_rows()
 
+
 # %%
 def select_params(fnames: list, param: str) -> list:
     files = [file for file in fnames if re.search(param, file)]
@@ -177,7 +178,7 @@ def get_model_params(model: xgb.XGBRegressor) -> dict:
 
 
 # %% load data
-model_dir = Path("/home/victoria/aki-forecaster/models/prelim/hadm_id_hyperparam_opt2")
+model_dir = Path("/home/victoria/aki-forecaster/models/prelim/hadm_id_hyperparam_opt5")
 pickles = [file for file in model_dir.iterdir()]
 filenames = list(map(lambda x: x.name, pickles))
 metrics = get_metrics(pickles)
@@ -265,22 +266,24 @@ comparison = pd.concat(
         metrics.error[2].iloc[-1],
         metrics.error[3].iloc[-1],
         metrics.error[4].iloc[-1],
-        metrics.error[5].iloc[-1],
-        metrics.error[6].iloc[-1],
-        metrics.error[7].iloc[-1],
+        # metrics.error[5].iloc[-1],
+        # metrics.error[6].iloc[-1],
+        # metrics.error[7].iloc[-1],
     ],
     axis=1,
     ignore_index=True,
 )
 
 comparison = pd.concat(
-    [metrics.error[2].iloc[800], metrics.error[4].iloc[3000],],
+    [metrics.error[2].iloc[800], metrics.error[4].iloc[3000]],
     axis=1,
     ignore_index=True,
 )
 
 
-data_dir = Path("/home/victoria/aki-forecaster/data/processed/continuous_vars_only")
+data_dir = Path(
+    "/home/victoria/aki-forecaster/data/processed/continuous_vars_only/hadm_id_window1_02"
+)
 X_test = pd.read_csv(data_dir / "X_test.csv", header=0, index_col=0,)
 Y_test = pd.read_csv(data_dir / "Y_test.csv", header=0, index_col=0,).reset_index(
     drop=True
@@ -312,11 +315,11 @@ y8 = model8.predict(X_test.values)
 y8 = pd.DataFrame(y8).rename(columns={0: "model8"})
 
 save_dir = Path(
-    "/home/victoria/aki-forecaster/data/processed/continuous_vars_only/hadm_id"
+    "/home/victoria/aki-forecaster/data/processed/continuous_vars_only/final_model"
 )
 y1.to_csv(Path(save_dir / "y1_pred.csv"))
 y2.to_csv(Path(save_dir / "y2_pred.csv"))
-y3.to_csv(Path(save_dir / "y3_pred.csv"))
+y3.to_csv(Path(save_dir / "y_pred.csv"))
 y4.to_csv(Path(save_dir / "y4_pred.csv"))
 y5.to_csv(Path(save_dir / "y5_pred.csv"))
 y6.to_csv(Path(save_dir / "y6_pred.csv"))
@@ -329,14 +332,14 @@ chart_concat = pd.concat([Y_test, y1, y2, y3, y4, y5, y6, y7, y8], axis=1)
 plot_metrics(
     chart_concat,
     features=[
-        "model1",
-        "model2",
+        # "model1",
+        # "model2",
         "model3",
-        "model4",
-        "model5",
-        "model6",
-        "model7",
-        "model8",
+        # "model4",
+        # "model5",
+        # "model6",
+        # "model7",
+        # "model8",
     ],
     x_title="True Creatinine Value from Test Set",
     x_inputs="Creatinine_avg",

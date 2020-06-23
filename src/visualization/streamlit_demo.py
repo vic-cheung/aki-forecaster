@@ -146,9 +146,9 @@ st.write(
     "xgb Predicted Creatinine value (mg/dL) on next day:",
     round(Predicted_Creatinine_xgb.values[0][0], 2),
 )
-st.write(
-    "Actual Creatinine value (mg/dL) on next day:", round(Actual_creatinine, 2),
-)
+# st.write(
+#     "Actual Creatinine value (mg/dL) on next day:", round(Actual_creatinine, 2),
+# )
 
 # st.write(
 #     "GFR calculated with Creatinine_avg (ml/min/1.73m2):", round(GFR, 2),
@@ -180,6 +180,7 @@ cbc_labels = [
 ]
 table = labs.loc[:, cbc_labels].T
 table.index = [x.split("[")[0] for x in table.index]
+table = round(table, 2)
 st.table(table)
 
 st.subheader("Other Blood Labs")
@@ -193,6 +194,7 @@ cbc_other_labels = [
 ]
 table = labs.loc[:, cbc_other_labels].T
 table.index = [x.split("[")[0] for x in table.index]
+table = round(table, 2)
 st.table(table)
 
 st.subheader("Chemistry Panel")
@@ -207,6 +209,7 @@ chem_labels = [
 ]
 table = labs.loc[:, chem_labels].T
 table.index = [x.split("[")[0] for x in table.index]
+table = round(table, 2)
 st.table(table)
 
 st.subheader("Liver Function Panel")
@@ -221,35 +224,39 @@ lft_labels = [
 ]
 table = labs.loc[:, lft_labels].T
 table.index = [x.split("[")[0] for x in table.index]
+table = round(table, 2)
 st.table(table)
 
 st.subheader("Cardiac Biomarkers")
 cardiac_labels = ["Troponin I[B-C]", "Troponin T[B-C]", "NTproBNP[B-C]"]
 table = labs.loc[:, cardiac_labels].T
 table.index = [x.split("[")[0] for x in table.index]
+table = round(table, 2)
 st.table(table)
 
 st.subheader("Diabetes Biomarkers")
 diabetes_labels = ["% Hemoglobin A1c[B-C]", "Estimated Actual Glucose[B-C]"]
 table = labs.loc[:, diabetes_labels].T
 table.index = [x.split("[")[0] for x in table.index]
+table = round(table, 2)
 st.table(table)
 
 st.subheader("Inflammatory Biomarkers")
 inflammatory_labels = ["C-Reactive Protein[B-C]", "Sedimentation Rate[B-H]"]
 table = labs.loc[:, inflammatory_labels].T
 table.index = [x.split("[")[0] for x in table.index]
+table = round(table, 2)
 st.table(table)
 
 st.subheader("Urinalysis Panel")
 urinalysis_labels = [
     "pH[U-H]",
     "Specific Gravity[U-H]",
-    "Urine Color[U-H]",
+    # "Urine Color[U-H]",
     "RBC[U-H]",
     "WBC[U-H]",
     "Bacteria[U-H]",
-    "Yeast[U-H]",
+    # "Yeast[U-H]",
     "Ketone[U-H]",
     "Protein[U-H]",
     "Broad Casts[U-H]",
@@ -258,6 +265,7 @@ urinalysis_labels = [
 ]
 table = labs.loc[:, urinalysis_labels].T
 table.index = [x.split("[")[0] for x in table.index]
+table = round(table, 2)
 st.table(table)
 
 st.subheader("Urine Chemistries Panel")
@@ -274,9 +282,5 @@ urine_chem_labels = [
 ]
 table = labs.loc[:, urine_chem_labels].T
 table.index = [x.split("[")[0] for x in table.index]
+table = round(table, 2)
 st.table(table)
-
-# st.table(labs.T)
-
-
-# %%

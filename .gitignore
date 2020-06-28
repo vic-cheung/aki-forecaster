@@ -1,6 +1,7 @@
 # Ignore Data Files
 .vscode/*
 aki-forecaster.code-workspace
+*.csv
 
 # Exclude Prelim Models
 models/prelim/*

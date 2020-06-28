@@ -46,7 +46,7 @@ Project Organization
     │
     │
     ├── spec-file.txt      <- Create an identical virtual environment. 
-                              `conda install --name myenv --file spec-file.txt`
+                              `conda create --name myenv --file spec-file.txt`
     
     
     

@@ -10,7 +10,7 @@ pd.set_option("display.max_columns", None)
 pd.set_option("display.max_rows", None)
 # %% load data
 base_path = Path(
-    "/home/victoria/aki-forecaster/data/processed/continuous_vars_only/hadm_id"
+    "/home/victoria/aki-forecaster/data/processed/continuous_vars_only/final_model"
 )
 ethnicity_dict = (
     pd.read_csv(base_path / "ethnicity_id.csv", header=0, index_col=0,)
@@ -18,13 +18,21 @@ ethnicity_dict = (
     .to_dict()
 )
 
-labs_df = pd.read_csv(base_path / "X_test.csv", header=0, index_col=0).iloc[51:100]
+labs_df = (
+    pd.read_csv(base_path / "X_test.csv", header=0, index_col=0)
+    .reset_index(drop=True)
+    .iloc[100:201]
+)
 demo_df = labs_df.loc[:, ["gender", "ethnicity", "weight", "height", "age"]]
 
-Y_test = pd.read_csv(base_path / "Y_test.csv", header=0, index_col=0).iloc[51:100]
+Y_test = (
+    pd.read_csv(base_path / "Y_test.csv", header=0, index_col=0)
+    .reset_index(drop=True)
+    .iloc[100:201]
+)
 
 Y_pred_xgb = pd.DataFrame(
-    pd.read_csv(base_path / "y3_pred.csv", header=0, index_col=0).iloc[51:100]
+    pd.read_csv(base_path / "y_pred.csv", header=0, index_col=0).iloc[100:201]
 ).rename(columns={"model3": "Creatinine_pred_xgb"})
 # %%
 st.title("Predicting Acute Kidney Injury in Critical Care/Intensive Care Units")
@@ -57,7 +65,7 @@ Creatinine_avg = round(
     (labs_df.loc[labs_df.index == pt_list].loc[:, "Creatinine[B-C]"].values[0]), 2
 )
 
-st.write("Creatinine 3-day average (mg/dL):", Creatinine_avg)
+st.write("Current Creatinine Value (mg/dL):", Creatinine_avg)
 
 Predicted_Creatinine_xgb = round(Y_pred_xgb.loc[labs_df.index == pt_list], 2)
 Actual_creatinine_value = Y_test.loc[labs_df.index == pt_list]
@@ -143,7 +151,7 @@ pt_demographics.age.values[0] = int(pt_demographics.age.values[0])
 #     st.write(f"<{color}>{color}</{color}>", unsafe_allow_html=True)
 
 st.write(
-    "xgb Predicted Creatinine value (mg/dL) on next day:",
+    "XGBoost Predicted Creatinine value (mg/dL) on next day:",
     round(Predicted_Creatinine_xgb.values[0][0], 2),
 )
 # st.write(
@@ -284,3 +292,9 @@ table = labs.loc[:, urine_chem_labels].T
 table.index = [x.split("[")[0] for x in table.index]
 table = round(table, 2)
 st.table(table)
+
+
+# %%
+
+
+# %%
